@@ -16,7 +16,6 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ questions, topic
 
   const overallProgress = total > 0 ? Math.round((solidCount / total) * 100) : 0;
 
-  // Calculate lowest progress topics
   const topicStats = topics.map((t) => {
     const topicQuestions = questions.filter((q) => q.topic_id === t.id);
     const tTotal = topicQuestions.length;
@@ -30,68 +29,52 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ questions, topic
     .slice(0, 3);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-      {/* Readiness Index */}
-      <div className="bg-white dark:bg-[#121316] border border-stone-200/80 dark:border-zinc-800/60 p-4 rounded-lg shadow-sm flex flex-col justify-between">
-        <div className="flex items-center justify-between text-[11px] font-mono text-stone-500 dark:text-zinc-400">
-          <span>READINESS SCORE</span>
-        </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-3xl font-mono font-semibold text-emerald-700 dark:text-emerald-400">{overallProgress}%</span>
-          <span className="text-xs font-mono text-stone-400 dark:text-zinc-500">({solidCount}/{total})</span>
-        </div>
-        <div className="w-full bg-stone-100 dark:bg-zinc-900 rounded-full h-1.5 mt-3 overflow-hidden border border-stone-200/60 dark:border-zinc-800/80">
-          <div
-            className="bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-500 dark:to-teal-400 h-full rounded-full transition-all duration-500 animate-progressGlow"
-            style={{ width: `${overallProgress}%` }}
-          />
-        </div>
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Total Questions Card */}
+      <div className="bg-[#f5f4ef] p-5 rounded-2xl flex flex-col justify-between shadow-sm">
+        <span className="text-3xl font-serif-display font-semibold text-stone-900 tracking-tight">{total}</span>
+        <span className="text-[10px] font-mono font-medium text-stone-500 uppercase tracking-widest mt-2">TOTAL QUESTIONS</span>
       </div>
 
-      {/* Mastery Status */}
-      <div className="bg-white dark:bg-[#121316] border border-stone-200/80 dark:border-zinc-800/60 p-4 rounded-lg shadow-sm flex flex-col justify-between">
-        <div className="flex items-center justify-between text-[11px] font-mono text-stone-500 dark:text-zinc-400">
-          <span>CONFIDENCE BREAKDOWN</span>
+      {/* Readiness Score Card */}
+      <div className="bg-[#f5f4ef] p-5 rounded-2xl flex flex-col justify-between shadow-sm">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-3xl font-serif-display font-semibold text-stone-900 tracking-tight">{overallProgress}%</span>
+          <span className="text-xs font-mono text-stone-400">({solidCount} solid)</span>
         </div>
-        <div className="grid grid-cols-3 gap-2 mt-2 font-mono text-center">
-          <div className="bg-red-50 border border-red-100 dark:bg-red-500/5 dark:border-red-500/10 p-1.5 rounded">
-            <span className="text-[10px] text-red-700 dark:text-red-400 block">WEAK</span>
-            <span className="text-sm font-semibold text-red-700 dark:text-red-400">{weakCount}</span>
-          </div>
-          <div className="bg-amber-50 border border-amber-100 dark:bg-amber-500/5 dark:border-amber-500/10 p-1.5 rounded">
-            <span className="text-[10px] text-amber-800 dark:text-amber-400 block">MEDIUM</span>
-            <span className="text-sm font-semibold text-amber-800 dark:text-amber-400">{mediumCount}</span>
-          </div>
-          <div className="bg-emerald-50 border border-emerald-100 dark:bg-emerald-500/5 dark:border-emerald-500/10 p-1.5 rounded">
-            <span className="text-[10px] text-emerald-800 dark:text-emerald-400 block">SOLID</span>
-            <span className="text-sm font-semibold text-emerald-800 dark:text-emerald-400">{solidCount}</span>
-          </div>
-        </div>
+        <span className="text-[10px] font-mono font-medium text-stone-500 uppercase tracking-widest mt-2">READINESS SCORE</span>
       </div>
 
-      {/* Focus Areas */}
-      <div className="md:col-span-2 bg-white dark:bg-[#121316] border border-stone-200/80 dark:border-zinc-800/60 p-4 rounded-lg shadow-sm flex flex-col justify-between font-mono">
-        <div className="flex items-center justify-between text-[11px] text-stone-500 dark:text-zinc-400">
-          <span>PRIORITY TOPIC QUEUE</span>
-          <span className="text-stone-400 dark:text-zinc-600">lowest_progress</span>
+      {/* Confidence Breakdown Card */}
+      <div className="bg-[#f5f4ef] p-5 rounded-2xl flex flex-col justify-between shadow-sm">
+        <div className="flex items-baseline justify-between text-center font-mono">
+          <div>
+            <span className="text-lg font-serif-display font-bold text-red-700 block">{weakCount}</span>
+            <span className="text-[9px] text-red-700/80 font-mono uppercase">WEAK</span>
+          </div>
+          <div className="border-x border-stone-300/60 px-3">
+            <span className="text-lg font-serif-display font-bold text-amber-800 block">{mediumCount}</span>
+            <span className="text-[9px] text-amber-800/80 font-mono uppercase">MEDIUM</span>
+          </div>
+          <div>
+            <span className="text-lg font-serif-display font-bold text-emerald-800 block">{solidCount}</span>
+            <span className="text-[9px] text-emerald-800/80 font-mono uppercase">SOLID</span>
+          </div>
         </div>
+        <span className="text-[10px] font-mono font-medium text-stone-500 uppercase tracking-widest mt-2">CONFIDENCE BREAKDOWN</span>
+      </div>
 
-        <div className="space-y-2 mt-2">
+      {/* Focus Topics Queue Card */}
+      <div className="bg-[#f5f4ef] p-5 rounded-2xl flex flex-col justify-between shadow-sm">
+        <div className="space-y-1.5 font-mono text-xs">
           {lowestTopics.map((lt, idx) => (
-            <div key={idx} className="flex items-center justify-between text-xs">
-              <span className="text-stone-700 dark:text-zinc-300 truncate max-w-[200px]">{lt.name}</span>
-              <div className="flex items-center gap-2">
-                <div className="w-28 bg-stone-100 dark:bg-zinc-900 rounded-full h-1.5 overflow-hidden border border-stone-200 dark:border-zinc-800">
-                  <div
-                    className="bg-gradient-to-r from-amber-500 to-emerald-500 h-full rounded-full transition-all duration-300"
-                    style={{ width: `${lt.pct}%` }}
-                  />
-                </div>
-                <span className="text-stone-500 dark:text-zinc-400 w-8 text-right font-mono">{lt.pct}%</span>
-              </div>
+            <div key={idx} className="flex items-center justify-between">
+              <span className="text-stone-700 truncate max-w-[140px] text-[11px] font-sans">{lt.name}</span>
+              <span className="text-stone-500 font-mono text-[11px]">{lt.pct}%</span>
             </div>
           ))}
         </div>
+        <span className="text-[10px] font-mono font-medium text-stone-500 uppercase tracking-widest mt-2">PRIORITY QUEUE</span>
       </div>
     </div>
   );

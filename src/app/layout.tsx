@@ -1,4 +1,4 @@
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Inter, Source_Serif_4, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
 const inter = Inter({
@@ -7,15 +7,21 @@ const inter = Inter({
   display: 'swap',
 });
 
+const sourceSerif = Source_Serif_4({
+  subsets: ['latin'],
+  variable: '--font-serif',
+  display: 'swap',
+});
+
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  variable: '--font-jetbrains',
+  variable: '--font-mono',
   display: 'swap',
 });
 
 export const metadata = {
-  title: 'SkillReady // Tech & System Design Prep Tracker',
-  description: 'Developer-grade interview preparation and spaced repetition tracker',
+  title: 'SkillReady — Interview Prep Tracker',
+  description: 'Editorial interview preparation and spaced repetition tracker',
 };
 
 export default function RootLayout({
@@ -24,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} dark`}>
-      <body className="bg-[#0b0c0e] text-zinc-200 antialiased font-sans min-h-screen selection:bg-emerald-500/30 selection:text-emerald-300">
+    <html lang="en" className={`${inter.variable} ${sourceSerif.variable} ${jetbrainsMono.variable}`}>
+      <body className="bg-[#fafaf8] text-stone-900 antialiased font-sans min-h-screen selection:bg-stone-900 selection:text-white">
         {children}
       </body>
     </html>

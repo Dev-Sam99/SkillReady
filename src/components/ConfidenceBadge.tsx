@@ -17,24 +17,24 @@ export const ConfidenceBadge: React.FC<ConfidenceBadgeProps> = ({
   const getBadgeStyle = (level: ConfidenceLevel) => {
     switch (level) {
       case 'weak':
-        return 'bg-red-50 text-red-700 border-red-200 hover:border-red-300 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20';
+        return 'bg-red-50 text-red-700 border-red-100 hover:bg-red-100/60';
       case 'medium':
-        return 'bg-amber-50 text-amber-800 border-amber-200 hover:border-amber-300 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
+        return 'bg-amber-50 text-amber-800 border-amber-100 hover:bg-amber-100/60';
       case 'solid':
-        return 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:border-emerald-300 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
+        return 'bg-emerald-50 text-emerald-800 border-emerald-100 hover:bg-emerald-100/60';
       default:
         return 'bg-stone-100 text-stone-600 border-stone-200';
     }
   };
 
-  const getDotStyle = (level: ConfidenceLevel) => {
+  const getLabel = (level: ConfidenceLevel) => {
     switch (level) {
       case 'weak':
-        return 'bg-red-500';
+        return 'Weak';
       case 'medium':
-        return 'bg-amber-500';
+        return 'Medium';
       case 'solid':
-        return 'bg-emerald-500';
+        return 'Solid';
     }
   };
 
@@ -48,13 +48,12 @@ export const ConfidenceBadge: React.FC<ConfidenceBadgeProps> = ({
           onClick();
         }
       }}
-      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[11px] font-mono transition-all duration-150 ${getBadgeStyle(
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-all ${getBadgeStyle(
         confidence
       )} ${interactive ? 'cursor-pointer active:scale-95' : 'cursor-default'}`}
-      title={interactive ? 'Click to cycle state (weak -> medium -> solid)' : undefined}
+      title={interactive ? 'Click to cycle state (Weak -> Medium -> Solid)' : undefined}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${getDotStyle(confidence)}`} />
-      <span className="capitalize">{confidence}</span>
+      <span>{getLabel(confidence)}</span>
     </button>
   );
 };
