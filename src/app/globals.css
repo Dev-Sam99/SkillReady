@@ -10,11 +10,6 @@
   body {
     background-color: var(--bg-app);
     color: #1c1917;
-    font-family: var(--font-sans), system-ui, sans-serif;
-  }
-
-  h1, h2, h3, .font-serif-display {
-    font-family: var(--font-serif), serif;
   }
 }
 
