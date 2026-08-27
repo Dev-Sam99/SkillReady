@@ -24,8 +24,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
-      <body className="bg-[#fafaf8] text-stone-900 antialiased font-sans min-h-screen selection:bg-stone-900 selection:text-white">
+    <html lang="en">
+      <body className={`${fraunces.variable} ${inter.variable} font-sans antialiased bg-[#fafaf8] text-stone-900 min-h-screen selection:bg-stone-900 selection:text-white`}>
         {children}
       </body>
     </html>
