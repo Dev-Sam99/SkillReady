@@ -9,7 +9,8 @@ import { QuestionCard } from '@/components/QuestionCard';
 import { QuestionModal } from '@/components/QuestionModal';
 import { DashboardStats } from '@/components/DashboardStats';
 import { ReviewDueSection } from '@/components/ReviewDueSection';
-import { Search, Plus, Terminal, RefreshCw, Layers } from 'lucide-react';
+import { SkillReadyLogo } from '@/components/SkillReadyLogo';
+import { Search, Plus, RefreshCw, FolderPlus, Sun, Moon } from 'lucide-react';
 
 export default function Home() {
   const [topics, setTopics] = useState<Topic[]>(MOCK_TOPICS);
@@ -18,10 +19,23 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
     fetchInitialData();
   }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(nextTheme);
+    if (nextTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   const fetchInitialData = async () => {
     const topicsRes = await getTopics();
@@ -124,38 +138,46 @@ export default function Home() {
     : topics.find(t => t.id === selectedTopicId)?.name || 'Topic';
 
   return (
-    <div className="min-h-screen bg-[#08090a] text-zinc-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-black">
-      {/* Sleek Dark Developer Header */}
-      <header className="bg-[#0b0c0e]/90 border-b border-zinc-800/80 sticky top-0 z-40 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] flex flex-col font-sans transition-colors duration-200">
+      {/* Solva / Editorial Light SaaS Header */}
+      <header className="bg-white/80 dark:bg-[#121316]/90 border-b border-stone-200/80 dark:border-zinc-800/80 sticky top-0 z-40 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-emerald-500/10 border border-emerald-500/30 p-2 rounded-lg text-emerald-400">
-              <Terminal className="w-5 h-5" />
-            </div>
+            <SkillReadyLogo className="w-6 h-6" />
             <div>
-              <h1 className="text-lg font-mono font-bold tracking-tight text-zinc-100 flex items-center gap-2">
-                SkillReady <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">v1.0</span>
+              <h1 className="text-base font-mono font-bold tracking-tight text-stone-900 dark:text-zinc-100 flex items-center gap-2">
+                SkillReady <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 font-mono border border-stone-200 dark:border-zinc-700">v1.0</span>
               </h1>
-              <p className="text-[11px] font-mono text-zinc-500">Terminal-Grade Interview Preparation & Spaced Repetition Engine</p>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setEditingQuestion(null);
-              setIsModalOpen(true);
-            }}
-            className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-black font-mono font-bold rounded-lg text-xs shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Add Question</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-1.5 rounded border border-stone-200 dark:border-zinc-800 text-stone-500 dark:text-zinc-400 hover:text-stone-800 dark:hover:text-zinc-200 transition-colors"
+              title="Toggle Light/Dark Theme"
+            >
+              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEditingQuestion(null);
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-medium rounded text-xs transition-all active:scale-95 shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Add Question</span>
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      {/* Main Content */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5 animate-fadeIn">
         {/* Dashboard Analytics */}
         <DashboardStats questions={questions} topics={topics} />
 
@@ -168,8 +190,8 @@ export default function Home() {
           }}
         />
 
-        {/* Topic Filter & Search Toolbar */}
-        <div className="space-y-3 bg-[#0e0f12] border border-zinc-800/80 p-4 rounded-xl shadow-xl">
+        {/* Topic Filter & Search Bar */}
+        <div className="space-y-3 bg-white dark:bg-[#121316] border border-stone-200/80 dark:border-zinc-800/60 p-4 rounded-lg shadow-sm">
           <TopicFilterBar
             topics={topics}
             selectedTopicId={selectedTopicId}
@@ -178,46 +200,46 @@ export default function Home() {
           />
 
           {/* Search bar & Progress */}
-          <div className="pt-3 border-t border-zinc-800/60 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 font-mono">
+          <div className="pt-2 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 font-mono">
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 dark:text-zinc-500" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`grep "${currentTopicName.toLowerCase()}"...`}
-                className="w-full pl-9 pr-4 py-2 bg-[#050607] border border-zinc-800/80 rounded-lg text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                placeholder={`Search in ${currentTopicName}...`}
+                className="w-full pl-9 pr-3 py-1.5 bg-stone-50/80 dark:bg-[#08090a] border border-stone-200 dark:border-zinc-800 rounded text-xs text-stone-800 dark:text-zinc-200 placeholder-stone-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
               />
             </div>
 
             {/* Topic Progress Bar */}
-            <div className="flex items-center gap-3 bg-[#050607] px-3.5 py-2 rounded-lg border border-zinc-800/80 text-xs">
-              <span className="text-zinc-500">{currentTopicName}:</span>
-              <div className="w-28 bg-zinc-900 rounded-full h-1.5 overflow-hidden border border-zinc-800">
+            <div className="flex items-center gap-3 bg-stone-50/80 dark:bg-[#08090a] px-3 py-1.5 rounded border border-stone-200 dark:border-zinc-800 text-xs">
+              <span className="text-stone-500 dark:text-zinc-500">{currentTopicName}:</span>
+              <div className="w-28 bg-stone-200 dark:bg-zinc-900 rounded-full h-1.5 overflow-hidden border border-stone-300/40 dark:border-zinc-800">
                 <div
-                  className="bg-emerald-400 h-full rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-500 dark:to-teal-400 h-full rounded-full transition-all duration-300"
                   style={{ width: `${topicProgressPct}%` }}
                 />
               </div>
-              <span className="text-emerald-400 font-bold">{topicProgressPct}%</span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-bold">{topicProgressPct}%</span>
             </div>
           </div>
         </div>
 
-        {/* Question Cards Grid */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs font-mono text-zinc-500">
-            <span>Query Results: {filteredQuestions.length} entries</span>
+        {/* Question Cards Section */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs font-mono text-stone-500 dark:text-zinc-500">
+            <span>{filteredQuestions.length} Questions</span>
             <button
               onClick={fetchInitialData}
-              className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="flex items-center gap-1 text-stone-400 hover:text-stone-700 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
             >
-              <RefreshCw className="w-3.5 h-3.5" /> Reload DB
+              <RefreshCw className="w-3 h-3" /> Sync
             </button>
           </div>
 
           {filteredQuestions.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-3">
               {filteredQuestions.map((q) => (
                 <QuestionCard
                   key={q.id}
@@ -233,12 +255,29 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="bg-[#0e0f12] border border-zinc-800/80 rounded-xl p-12 text-center space-y-3 font-mono">
-              <Layers className="w-8 h-8 text-zinc-700 mx-auto" />
-              <h3 className="text-sm font-semibold text-zinc-300">0_RESULTS_RETURNED</h3>
-              <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-                No entries match the query criteria. Clear filters or add a new question card.
-              </p>
+            /* Friendly Designed Empty State */
+            <div className="bg-white dark:bg-[#121316] border border-dashed border-stone-300 dark:border-zinc-800 rounded-lg p-10 text-center space-y-3 font-mono animate-fadeIn">
+              <div className="w-10 h-10 rounded-full bg-stone-100 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 flex items-center justify-center mx-auto text-emerald-600 dark:text-emerald-400">
+                <FolderPlus className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xs font-semibold text-stone-800 dark:text-zinc-300 uppercase tracking-wider">No Questions Found</h3>
+                <p className="text-xs text-stone-500 dark:text-zinc-500 max-w-xs mx-auto">
+                  {selectedTopicId === 'all'
+                    ? 'No questions added yet. Start by adding your first interview Q&A!'
+                    : `No questions recorded under "${currentTopicName}" yet.`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingQuestion(null);
+                  setIsModalOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30 rounded text-xs transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add First Question
+              </button>
             </div>
           )}
         </div>

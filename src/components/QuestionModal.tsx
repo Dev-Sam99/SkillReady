@@ -66,31 +66,31 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-scaleUp">
+    <div className="fixed inset-0 z-50 bg-stone-900/40 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-lg w-full max-w-lg shadow-2xl overflow-hidden animate-scaleUp">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-100">
+        <div className="px-5 py-3.5 border-b border-stone-200 dark:border-zinc-800 flex items-center justify-between">
+          <h2 className="text-sm font-semibold font-mono text-stone-900 dark:text-zinc-100">
             {initialQuestion ? 'Edit Question' : 'Add New Question'}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+            className="p-1 rounded text-stone-400 hover:text-stone-700 dark:hover:text-zinc-200"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs md:text-sm">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs md:text-sm">
           <div>
-            <label className="block text-slate-400 mb-1 font-medium">Select Topic *</label>
+            <label className="block text-stone-600 dark:text-zinc-400 mb-1 font-mono text-xs">Topic *</label>
             <select
               required
               value={topicId}
               onChange={(e) => setTopicId(e.target.value)}
-              className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full p-2 bg-stone-50 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 rounded text-stone-900 dark:text-zinc-100 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             >
               <option value="" disabled>Select a topic</option>
               {topics.map((t) => (
@@ -100,55 +100,55 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-400 mb-1 font-medium">Question Text *</label>
+            <label className="block text-stone-600 dark:text-zinc-400 mb-1 font-mono text-xs">Question *</label>
             <input
               type="text"
               required
               value={questionText}
               onChange={(e) => setQuestionText(e.target.value)}
               placeholder="e.g. Explain how Floyd's Cycle Detection works."
-              className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full p-2 bg-stone-50 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 rounded text-stone-900 dark:text-zinc-100 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 mb-1 font-medium">Detailed Answer (Multiline) *</label>
+            <label className="block text-stone-600 dark:text-zinc-400 mb-1 font-mono text-xs">Detailed Answer *</label>
             <textarea
               required
-              rows={5}
+              rows={4}
               value={answerText}
               onChange={(e) => setAnswerText(e.target.value)}
-              placeholder="Comprehensive solution, code snippet, algorithm breakdown..."
-              className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-sans focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              placeholder="Solution breakdown, complexity, approach..."
+              className="w-full p-2 bg-stone-50 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 rounded text-stone-900 dark:text-zinc-100 font-sans focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 mb-1 font-medium">Initial Confidence</label>
+            <label className="block text-stone-600 dark:text-zinc-400 mb-1 font-mono text-xs">Confidence</label>
             <select
               value={confidence}
               onChange={(e) => setConfidence(e.target.value as ConfidenceLevel)}
-              className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full p-2 bg-stone-50 dark:bg-zinc-950 border border-stone-200 dark:border-zinc-800 rounded text-stone-900 dark:text-zinc-100 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             >
-              <option value="weak">🔴 Weak (Needs Work)</option>
-              <option value="medium">🟡 Medium (Getting There)</option>
-              <option value="solid">🟢 Solid (Mastered)</option>
+              <option value="weak">weak (needs work)</option>
+              <option value="medium">medium (practicing)</option>
+              <option value="solid">solid (mastered)</option>
             </select>
           </div>
 
           {/* Form Actions */}
-          <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-stone-200 dark:border-zinc-800 flex items-center justify-end gap-2 font-mono text-xs">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+              className="px-3 py-1.5 rounded text-stone-500 hover:text-stone-800 dark:text-zinc-400 dark:hover:text-zinc-200"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-md shadow-indigo-600/30 transition-all"
+              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium shadow-sm transition-all"
             >
               {isSubmitting ? 'Saving...' : initialQuestion ? 'Save Changes' : 'Create Question'}
             </button>

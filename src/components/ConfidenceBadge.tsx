@@ -17,28 +17,17 @@ export const ConfidenceBadge: React.FC<ConfidenceBadgeProps> = ({
   const getBadgeStyle = (level: ConfidenceLevel) => {
     switch (level) {
       case 'weak':
-        return 'bg-red-500/10 text-red-400 border-red-500/25 hover:bg-red-500/20 hover:border-red-500/40';
+        return 'bg-red-50 text-red-700 border-red-200 hover:border-red-300 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20';
       case 'medium':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/25 hover:bg-amber-500/20 hover:border-amber-500/40';
+        return 'bg-amber-50 text-amber-800 border-amber-200 hover:border-amber-300 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
       case 'solid':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20 hover:border-emerald-500/40';
+        return 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:border-emerald-300 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
       default:
-        return 'bg-zinc-800/80 text-zinc-400 border-zinc-700/60';
+        return 'bg-stone-100 text-stone-600 border-stone-200';
     }
   };
 
-  const getLabel = (level: ConfidenceLevel) => {
-    switch (level) {
-      case 'weak':
-        return 'NEEDS WORK';
-      case 'medium':
-        return 'PRACTICING';
-      case 'solid':
-        return 'MASTERED';
-    }
-  };
-
-  const getDotColor = (level: ConfidenceLevel) => {
+  const getDotStyle = (level: ConfidenceLevel) => {
     switch (level) {
       case 'weak':
         return 'bg-red-500';
@@ -59,13 +48,13 @@ export const ConfidenceBadge: React.FC<ConfidenceBadgeProps> = ({
           onClick();
         }
       }}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold tracking-wider border uppercase transition-all duration-150 ${getBadgeStyle(
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[11px] font-mono transition-all duration-150 ${getBadgeStyle(
         confidence
       )} ${interactive ? 'cursor-pointer active:scale-95' : 'cursor-default'}`}
-      title={interactive ? 'Click to cycle state (Weak -> Medium -> Solid)' : undefined}
+      title={interactive ? 'Click to cycle state (weak -> medium -> solid)' : undefined}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${getDotColor(confidence)} animate-pulse`} />
-      <span>{getLabel(confidence)}</span>
+      <span className={`w-1.5 h-1.5 rounded-full ${getDotStyle(confidence)}`} />
+      <span className="capitalize">{confidence}</span>
     </button>
   );
 };

@@ -33,51 +33,60 @@ export const TopicFilterBar: React.FC<TopicFilterBarProps> = ({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 py-1 overflow-x-auto no-scrollbar">
+    <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar border-b border-stone-200 dark:border-zinc-800">
       {/* All Option Pill */}
       <button
         type="button"
         onClick={() => onSelectTopic('all')}
-        className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all border ${
+        className={`px-3 py-1.5 text-xs font-mono transition-all relative whitespace-nowrap ${
           selectedTopicId === 'all'
-            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/40 shadow-sm shadow-emerald-500/10'
-            : 'bg-zinc-900/60 text-zinc-400 border-zinc-800/80 hover:text-zinc-200 hover:border-zinc-700'
+            ? 'text-emerald-700 dark:text-emerald-400 font-semibold'
+            : 'text-stone-500 hover:text-stone-800 dark:text-zinc-400 dark:hover:text-zinc-200'
         }`}
       >
-        <span className="text-zinc-600 mr-1">$</span>all_topics
+        All Topics
+        {selectedTopicId === 'all' && (
+          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400 rounded-full animate-fadeIn" />
+        )}
       </button>
 
       {/* Dynamic Topic Pills */}
-      {topics.map((topic) => (
-        <button
-          key={topic.id}
-          type="button"
-          onClick={() => onSelectTopic(topic.id)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all border ${
-            selectedTopicId === topic.id
-              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/40 shadow-sm shadow-emerald-500/10'
-              : 'bg-zinc-900/60 text-zinc-400 border-zinc-800/80 hover:text-zinc-200 hover:border-zinc-700'
-          }`}
-        >
-          {topic.name}
-        </button>
-      ))}
+      {topics.map((topic) => {
+        const isSelected = selectedTopicId === topic.id;
+        return (
+          <button
+            key={topic.id}
+            type="button"
+            onClick={() => onSelectTopic(topic.id)}
+            className={`px-3 py-1.5 text-xs font-mono transition-all relative whitespace-nowrap ${
+              isSelected
+                ? 'text-emerald-700 dark:text-emerald-400 font-semibold'
+                : 'text-stone-500 hover:text-stone-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+            }`}
+          >
+            {topic.name}
+            {isSelected && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400 rounded-full animate-fadeIn" />
+            )}
+          </button>
+        );
+      })}
 
       {/* Inline Add Topic Button or Form */}
       {isAdding ? (
-        <form onSubmit={handleAddSubmit} className="flex items-center gap-1.5 animate-fadeIn">
+        <form onSubmit={handleAddSubmit} className="flex items-center gap-1.5 ml-2 animate-fadeIn">
           <input
             type="text"
             autoFocus
             value={newTopicName}
             onChange={(e) => setNewTopicName(e.target.value)}
-            placeholder="topic_name..."
-            className="px-3 py-1 bg-zinc-950 border border-emerald-500/50 rounded-lg text-xs font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            placeholder="Topic title..."
+            className="px-2.5 py-1 bg-white dark:bg-zinc-950 border border-stone-300 dark:border-zinc-700 rounded text-xs font-mono text-stone-900 dark:text-zinc-100 placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
           <button
             type="submit"
             disabled={isSubmitting}
-            className="p-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40"
+            className="p-1 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30"
             title="Save Topic"
           >
             <Check className="w-3.5 h-3.5" />
@@ -85,7 +94,7 @@ export const TopicFilterBar: React.FC<TopicFilterBarProps> = ({
           <button
             type="button"
             onClick={() => setIsAdding(false)}
-            className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+            className="p-1 rounded bg-stone-100 text-stone-500 hover:text-stone-800 dark:bg-zinc-900 dark:text-zinc-400"
             title="Cancel"
           >
             <X className="w-3.5 h-3.5" />
@@ -95,10 +104,10 @@ export const TopicFilterBar: React.FC<TopicFilterBarProps> = ({
         <button
           type="button"
           onClick={() => setIsAdding(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono text-zinc-400 hover:text-emerald-400 bg-zinc-900/40 hover:bg-zinc-900 border border-dashed border-zinc-800 hover:border-emerald-500/40 transition-colors"
+          className="flex items-center gap-1 px-2.5 py-1 text-xs font-mono text-stone-400 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors ml-2"
         >
-          <Plus className="w-3 h-3 text-emerald-500" />
-          <span>new_topic</span>
+          <Plus className="w-3 h-3 text-emerald-600" />
+          <span>Add topic</span>
         </button>
       )}
     </div>

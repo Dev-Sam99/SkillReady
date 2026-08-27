@@ -2,30 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Editorial Light Mode Palette (Default) */
+  --bg-app: #faf9f6; /* Warm alabaster/off-white */
+  --bg-card: #ffffff;
+  --bg-surface: #f4f3ef;
+  --border-color: #e5e3dc;
+  --border-hover: #d1cebe;
+  
+  --text-primary: #1c1917; /* Warm dark slate/charcoal */
+  --text-secondary: #57534e;
+  --text-muted: #78716c;
+
+  --accent-emerald: #059669;
+  --accent-emerald-glow: rgba(5, 150, 105, 0.12);
+  --accent-amber: #d97706;
+  --accent-red: #dc2626;
+}
+
+[data-theme="dark"] {
+  /* Dark Mode Palette Toggle */
+  --bg-app: #0b0c0e;
+  --bg-card: #121316;
+  --bg-surface: #08090a;
+  --border-color: rgba(63, 63, 70, 0.4);
+  --border-hover: rgba(113, 113, 122, 0.6);
+  
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+
+  --accent-emerald: #10b981;
+  --accent-emerald-glow: rgba(16, 185, 129, 0.15);
+  --accent-amber: #f59e0b;
+  --accent-red: #ef4444;
+}
+
 @layer base {
   body {
-    @apply bg-[#08090a] text-zinc-200 antialiased selection:bg-emerald-500 selection:text-black font-sans min-h-screen;
-    background-image: 
-      radial-gradient(at 50% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 75%),
-      radial-gradient(at 100% 100%, rgba(24, 24, 27, 0.8) 0px, transparent 50%);
-    background-attachment: fixed;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    font-family: var(--font-inter), system-ui, sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
-/* Custom Sleek Scrollbar */
+.font-mono {
+  font-family: var(--font-jetbrains), monospace;
+}
+
+/* Elegant Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #08090a;
+  background: var(--bg-app);
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--border-color);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--border-hover);
 }
 
 @keyframes fadeIn {
@@ -34,5 +73,5 @@
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.2s ease-out forwards;
 }

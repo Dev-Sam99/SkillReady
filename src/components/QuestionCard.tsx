@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Question, ConfidenceLevel } from '@/types';
 import { ConfidenceBadge } from './ConfidenceBadge';
-import { ChevronDown, ChevronUp, Edit3, Trash2, Clock, Terminal } from 'lucide-react';
+import { ChevronDown, ChevronUp, Edit3, Trash2, Sparkles } from 'lucide-react';
 
 interface QuestionCardProps {
   question: Question;
@@ -36,13 +36,13 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   };
 
   return (
-    <div className="bg-[#0e0f12] border border-zinc-800/80 hover:border-zinc-700/80 rounded-xl p-5 space-y-4 shadow-xl transition-all duration-150 relative overflow-hidden group">
-      {/* Header bar */}
+    <div className="bg-white dark:bg-[#121316]/90 border border-stone-200/80 dark:border-zinc-800/60 hover:border-stone-300 dark:hover:border-zinc-700/80 rounded-lg p-4 space-y-3 transition-all duration-200 hover:-translate-y-0.5 group shadow-sm hover:shadow-md">
+      {/* Header section */}
       <div className="flex items-start justify-between gap-3">
-        <div className="space-y-2 flex-1">
+        <div className="space-y-1.5 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             {topicName && (
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-900 text-zinc-400 border border-zinc-800/80">
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-stone-100 text-stone-600 border border-stone-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800">
                 {topicName}
               </span>
             )}
@@ -52,17 +52,17 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             />
           </div>
 
-          <h3 className="text-base font-semibold text-zinc-100 leading-snug group-hover:text-emerald-400 transition-colors">
+          <h3 className="text-sm font-medium text-stone-900 dark:text-zinc-100 leading-snug group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
             {question.question}
           </h3>
         </div>
 
         {/* Action icons */}
-        <div className="flex items-center gap-1 text-zinc-500 opacity-80 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 text-stone-400 dark:text-zinc-500 opacity-60 group-hover:opacity-100 transition-opacity">
           <button
             type="button"
             onClick={() => onEdit(question)}
-            className="p-1.5 hover:text-emerald-400 hover:bg-zinc-900 rounded-md transition-colors"
+            className="p-1 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded transition-colors"
             title="Edit Question"
           >
             <Edit3 className="w-3.5 h-3.5" />
@@ -70,7 +70,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           <button
             type="button"
             onClick={() => setShowDeleteConfirm(true)}
-            className="p-1.5 hover:text-red-400 hover:bg-zinc-900 rounded-md transition-colors"
+            className="p-1 hover:text-red-600 dark:hover:text-red-400 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded transition-colors"
             title="Delete Question"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -83,44 +83,45 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         <button
           type="button"
           onClick={() => setShowAnswer(!showAnswer)}
-          className={`w-full py-2 px-3 rounded-lg text-xs font-mono font-medium flex items-center justify-between transition-all border ${
+          className={`w-full py-1.5 px-3 rounded text-xs font-mono flex items-center justify-between transition-all border ${
             showAnswer
-              ? 'bg-zinc-900/90 text-emerald-400 border-emerald-500/30'
-              : 'bg-zinc-950/60 text-zinc-400 border-zinc-800/60 hover:text-zinc-200 hover:border-zinc-700'
+              ? 'bg-stone-50 text-emerald-800 border-emerald-200 dark:bg-zinc-950 dark:text-emerald-400 dark:border-emerald-500/30'
+              : 'bg-stone-50/60 text-stone-500 border-stone-200/60 hover:text-stone-800 hover:border-stone-300 dark:bg-zinc-950/40 dark:text-zinc-400 dark:border-zinc-800/40 dark:hover:text-zinc-200'
           }`}
         >
           <span className="flex items-center gap-2">
-            <Terminal className="w-3.5 h-3.5 text-emerald-500" />
-            {showAnswer ? 'hide_solution.sh' : 'reveal_solution.sh'}
+            <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-500" />
+            {showAnswer ? 'hide solution' : 'reveal solution'}
           </span>
-          {showAnswer ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {showAnswer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
 
         {/* Collapsible Answer Body */}
-        {showAnswer && (
-          <div className="mt-3 p-4 bg-[#050607] rounded-lg border border-zinc-800 text-xs md:text-sm text-zinc-300 leading-relaxed font-sans whitespace-pre-line animate-fadeIn relative">
-            <div className="absolute top-2 right-2 text-[10px] font-mono text-zinc-600 uppercase">Solution Note</div>
+        <div
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+            showAnswer ? 'max-h-[1000px] opacity-100 mt-2.5' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <div className="p-3.5 bg-[#fcfbf9] dark:bg-[#08090a] rounded border border-stone-200 dark:border-zinc-800 text-xs text-stone-800 dark:text-zinc-300 leading-relaxed whitespace-pre-line font-sans">
             {question.answer}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Footer metadata */}
-      <div className="pt-2 border-t border-zinc-800/40 flex items-center justify-between text-[11px] font-mono text-zinc-500">
-        <span className="flex items-center gap-1.5">
-          <Clock className="w-3 h-3 text-zinc-600" /> Last Reviewed: {formatDate(question.last_reviewed)}
-        </span>
+      <div className="pt-2 border-t border-stone-100 dark:border-zinc-800/40 flex items-center justify-between text-[11px] font-mono text-stone-400 dark:text-zinc-500">
+        <span>last_reviewed: {formatDate(question.last_reviewed)}</span>
       </div>
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirm && (
-        <div className="p-3 bg-red-950/30 border border-red-500/30 rounded-lg flex items-center justify-between text-xs text-red-300 animate-fadeIn">
-          <span className="font-mono">Delete this item permanently?</span>
+        <div className="p-2.5 bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-500/30 rounded flex items-center justify-between text-xs text-red-700 dark:text-red-300 animate-fadeIn font-mono">
+          <span>Confirm deletion?</span>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(false)}
-              className="px-2.5 py-1 rounded bg-zinc-800 text-zinc-300 hover:bg-zinc-700 font-mono"
+              className="px-2 py-0.5 rounded bg-stone-200 text-stone-700 hover:bg-stone-300 dark:bg-zinc-800 dark:text-zinc-300"
             >
               Cancel
             </button>
@@ -130,7 +131,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 onDelete(question.id);
                 setShowDeleteConfirm(false);
               }}
-              className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-500 text-white font-mono font-semibold"
+              className="px-2 py-0.5 rounded bg-red-600 hover:bg-red-500 text-white font-semibold"
             >
               Delete
             </button>
