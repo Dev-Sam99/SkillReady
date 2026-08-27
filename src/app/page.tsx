@@ -18,7 +18,6 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
-  const [loading, setLoading] = useState(false);
 
   // Fetch topics and questions on mount
   useEffect(() => {
@@ -26,14 +25,11 @@ export default function Home() {
   }, []);
 
   const fetchInitialData = async () => {
-    setLoading(true);
     const topicsRes = await getTopics();
     if (topicsRes.data) setTopics(topicsRes.data);
 
     const questionsRes = await getQuestions();
     if (questionsRes.data) setQuestions(questionsRes.data);
-
-    setLoading(false);
   };
 
   // Topic Addition
