@@ -1,4 +1,4 @@
-import { ConfidenceLevel, Question, Topic } from '@/types';
+import type { Question, Topic } from '@/types';
 
 export const MOCK_TOPICS: Topic[] = [
   { id: '11111111-1111-1111-1111-111111111111', name: 'Data Structures & Algorithms' },
