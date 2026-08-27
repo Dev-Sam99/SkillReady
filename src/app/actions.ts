@@ -1,56 +1,70 @@
 'use server';
 
-import { supabase } from '@/lib/supabase';
-import { ConfidenceLevel } from '@/types';
+import { sql, isNeonConfigured } from '@/lib/db';
+import { ConfidenceLevel, Question, Topic } from '@/types';
 import { revalidatePath } from 'next/cache';
-
-const isSupabaseConfigured = () => {
-  return (
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')
-  );
-};
 
 // TOPIC ACTIONS
 export async function getTopics() {
-  if (!isSupabaseConfigured()) {
-    return { data: null, error: 'SUPABASE_NOT_CONFIGURED' };
+  if (!isNeonConfigured()) {
+    return { data: null, error: 'DATABASE_URL_NOT_CONFIGURED' };
   }
-  const { data, error } = await supabase
-    .from('topics')
-    .select('*')
-    .order('name');
-  return { data, error };
+  try {
+    const rows = await sql`SELECT id, name, created_at FROM topics ORDER BY name ASC`;
+    return { data: rows as Topic[], error: null };
+  } catch (error: any) {
+    console.error('Error fetching topics:', error);
+    return { data: null, error: error.message };
+  }
 }
 
 export async function addTopic(name: string) {
-  if (!isSupabaseConfigured()) {
+  if (!isNeonConfigured()) {
     return { data: { id: `t-${Date.now()}`, name }, error: null };
   }
 
-  const { data, error } = await supabase
-    .from('topics')
-    .insert([{ name: name.trim() }])
-    .select()
-    .single();
-
-  revalidatePath('/');
-  return { data, error };
+  try {
+    const rows = await sql`
+      INSERT INTO topics (name) 
+      VALUES (${name.trim()}) 
+      ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+      RETURNING id, name, created_at
+    `;
+    revalidatePath('/');
+    return { data: rows[0] as Topic, error: null };
+  } catch (error: any) {
+    console.error('Error adding topic:', error);
+    return { data: null, error: error.message };
+  }
 }
 
 // QUESTION ACTIONS
 export async function getQuestions(topicId?: string) {
-  if (!isSupabaseConfigured()) {
-    return { data: null, error: 'SUPABASE_NOT_CONFIGURED' };
+  if (!isNeonConfigured()) {
+    return { data: null, error: 'DATABASE_URL_NOT_CONFIGURED' };
   }
 
-  let query = supabase.from('questions').select('*, topics(*)').order('created_at', { ascending: false });
-  if (topicId && topicId !== 'all') {
-    query = query.eq('topic_id', topicId);
+  try {
+    let rows;
+    if (topicId && topicId !== 'all') {
+      rows = await sql`
+        SELECT id, topic_id, question, answer, confidence, last_reviewed, created_at, updated_at 
+        FROM questions 
+        WHERE topic_id = ${topicId}::uuid
+        ORDER BY created_at DESC
+      `;
+    } else {
+      rows = await sql`
+        SELECT id, topic_id, question, answer, confidence, last_reviewed, created_at, updated_at 
+        FROM questions 
+        ORDER BY created_at DESC
+      `;
+    }
+    return { data: rows as Question[], error: null };
+  } catch (error: any) {
+    console.error('Error fetching questions:', error);
+    return { data: null, error: error.message };
   }
-
-  const { data, error } = await query;
-  return { data, error };
 }
 
 export async function createQuestion(formData: {
@@ -59,29 +73,31 @@ export async function createQuestion(formData: {
   answer: string;
   confidence: ConfidenceLevel;
 }) {
-  if (!isSupabaseConfigured()) {
-    return { data: { id: `q-${Date.now()}`, ...formData, last_reviewed: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() }, error: null };
+  if (!isNeonConfigured()) {
+    return {
+      data: {
+        id: `q-${Date.now()}`,
+        ...formData,
+        last_reviewed: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      error: null,
+    };
   }
 
-  const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from('questions')
-    .insert([
-      {
-        topic_id: formData.topic_id,
-        question: formData.question.trim(),
-        answer: formData.answer.trim(),
-        confidence: formData.confidence,
-        last_reviewed: now,
-        created_at: now,
-        updated_at: now,
-      },
-    ])
-    .select()
-    .single();
-
-  revalidatePath('/');
-  return { data, error };
+  try {
+    const rows = await sql`
+      INSERT INTO questions (topic_id, question, answer, confidence, last_reviewed)
+      VALUES (${formData.topic_id}::uuid, ${formData.question.trim()}, ${formData.answer.trim()}, ${formData.confidence}, NOW())
+      RETURNING id, topic_id, question, answer, confidence, last_reviewed, created_at, updated_at
+    `;
+    revalidatePath('/');
+    return { data: rows[0] as Question, error: null };
+  } catch (error: any) {
+    console.error('Error creating question:', error);
+    return { data: null, error: error.message };
+  }
 }
 
 export async function updateQuestion(
@@ -93,38 +109,58 @@ export async function updateQuestion(
     confidence?: ConfidenceLevel;
   }
 ) {
-  if (!isSupabaseConfigured()) {
+  if (!isNeonConfigured()) {
     return { data: null, error: null };
   }
 
-  const now = new Date().toISOString();
-  const updatePayload: Record<string, any> = {
-    ...formData,
-    updated_at: now,
-  };
+  try {
+    let rows;
+    if (formData.confidence !== undefined) {
+      // Confidence update -> update last_reviewed timestamp
+      rows = await sql`
+        UPDATE questions 
+        SET 
+          topic_id = COALESCE(${formData.topic_id || null}::uuid, topic_id),
+          question = COALESCE(${formData.question || null}, question),
+          answer = COALESCE(${formData.answer || null}, answer),
+          confidence = COALESCE(${formData.confidence || null}, confidence),
+          last_reviewed = NOW(),
+          updated_at = NOW()
+        WHERE id = ${id}::uuid
+        RETURNING id, topic_id, question, answer, confidence, last_reviewed, created_at, updated_at
+      `;
+    } else {
+      rows = await sql`
+        UPDATE questions 
+        SET 
+          topic_id = COALESCE(${formData.topic_id || null}::uuid, topic_id),
+          question = COALESCE(${formData.question || null}, question),
+          answer = COALESCE(${formData.answer || null}, answer),
+          updated_at = NOW()
+        WHERE id = ${id}::uuid
+        RETURNING id, topic_id, question, answer, confidence, last_reviewed, created_at, updated_at
+      `;
+    }
 
-  // If confidence is changed or explicitly reviewed, auto-update last_reviewed
-  if (formData.confidence !== undefined) {
-    updatePayload.last_reviewed = now;
+    revalidatePath('/');
+    return { data: rows[0] as Question, error: null };
+  } catch (error: any) {
+    console.error('Error updating question:', error);
+    return { data: null, error: error.message };
   }
-
-  const { data, error } = await supabase
-    .from('questions')
-    .update(updatePayload)
-    .eq('id', id)
-    .select()
-    .single();
-
-  revalidatePath('/');
-  return { data, error };
 }
 
 export async function deleteQuestion(id: string) {
-  if (!isSupabaseConfigured()) {
+  if (!isNeonConfigured()) {
     return { error: null };
   }
 
-  const { error } = await supabase.from('questions').delete().eq('id', id);
-  revalidatePath('/');
-  return { error };
+  try {
+    await sql`DELETE FROM questions WHERE id = ${id}::uuid`;
+    revalidatePath('/');
+    return { error: null };
+  } catch (error: any) {
+    console.error('Error deleting question:', error);
+    return { error: error.message };
+  }
 }

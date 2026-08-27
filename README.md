@@ -1,34 +1,36 @@
 # SkillReady - Interview Q&A Tracker
 
-SkillReady is a personal, topic-focused Interview Q&A Tracker built with **Next.js 14 (App Router)**, **Tailwind CSS**, and **Supabase (PostgreSQL)**.
+SkillReady is a personal, topic-focused Interview Q&A Tracker built with **Next.js 14 (App Router)**, **Tailwind CSS**, and **Neon (Serverless Postgres)**.
 
 ## Features
-- **Topic Bar**: Dynamic pills filtered from PostgreSQL database with inline topic addition.
+- **Topic Bar**: Dynamic pills filtered from Neon PostgreSQL database with inline topic addition.
 - **Question Cards**: Reveal answer toggle, color-coded confidence badges (`weak`, `medium`, `solid`) with one-click inline toggling.
 - **Progress Tracking**: Dynamic progress bars per topic and overall dashboard stats.
 - **Review Due System**: Highlights questions not reviewed in 7+ days.
 - **Full CRUD**: Modal forms for adding and editing questions, with delete confirmation.
-- **Supabase Integration**: Clean client initialization and Server Actions for data mutation.
+- **Neon Integration**: Serverless Postgres driver (`@neondatabase/serverless`) via Next.js Server Actions.
 
 ## Tech Stack
 - **Framework**: Next.js 14 (App Router) + TypeScript
 - **Styling**: Tailwind CSS
-- **Database**: Supabase (PostgreSQL free tier)
-- **Deployment**: Vercel
+- **Database**: Neon Serverless Postgres
+- **Deployment Target**: Vercel
 - **Version Control**: Git / GitHub
 
 ---
 
-## Database Setup (Supabase)
+## Database Setup (Neon Postgres)
 
-Run the following SQL in your Supabase project's **SQL Editor**:
+1. Log into your [Neon Console](https://console.neon.tech).
+2. Create a new project or select an existing project.
+3. Open the **SQL Editor** tab and execute the following DDL script:
 
 ```sql
 -- 1. Create topics table
 CREATE TABLE IF NOT EXISTS topics (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
 -- 2. Create questions table
@@ -39,8 +41,8 @@ CREATE TABLE IF NOT EXISTS questions (
   answer TEXT NOT NULL,
   confidence TEXT CHECK (confidence IN ('weak', 'medium', 'solid')) DEFAULT 'weak' NOT NULL,
   last_reviewed TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
 -- 3. Seed initial topics
@@ -51,20 +53,6 @@ INSERT INTO topics (name) VALUES
   ('Frontend React / Next.js'),
   ('Backend & DB')
 ON CONFLICT (name) DO NOTHING;
-
--- 4. Enable Row Level Security (RLS) & add public access policy for v1
-ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
-ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Allow public select on topics" ON topics FOR SELECT USING (true);
-CREATE POLICY "Allow public insert on topics" ON topics FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update on topics" ON topics FOR UPDATE USING (true);
-CREATE POLICY "Allow public delete on topics" ON topics FOR DELETE USING (true);
-
-CREATE POLICY "Allow public select on questions" ON questions FOR SELECT USING (true);
-CREATE POLICY "Allow public insert on questions" ON questions FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update on questions" ON questions FOR UPDATE USING (true);
-CREATE POLICY "Allow public delete on questions" ON questions FOR DELETE USING (true);
 ```
 
 ---
@@ -87,10 +75,9 @@ CREATE POLICY "Allow public delete on questions" ON questions FOR DELETE USING (
    ```bash
    cp .env.example .env.local
    ```
-   Fill in your Supabase project credentials:
+   Add your Neon connection string:
    ```env
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+   DATABASE_URL=postgresql://user:password@ep-sample-123456.us-east-2.aws.neon.tech/neondb?sslmode=require
    ```
 
 4. **Run Dev Server**:
@@ -106,6 +93,5 @@ CREATE POLICY "Allow public delete on questions" ON questions FOR DELETE USING (
 1. Push your code to your GitHub repository `skillready`.
 2. Go to [Vercel Dashboard](https://vercel.com/new) and import the repository.
 3. Under **Environment Variables**, add:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `DATABASE_URL`: *(Your Neon Connection String)*
 4. Click **Deploy**. Vercel will automatically trigger builds on every git push to `main`.
