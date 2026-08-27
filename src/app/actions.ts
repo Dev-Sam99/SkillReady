@@ -12,9 +12,10 @@ export async function getTopics() {
   try {
     const rows = await sql`SELECT id, name, created_at FROM topics ORDER BY name ASC`;
     return { data: rows as Topic[], error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     console.error('Error fetching topics:', error);
-    return { data: null, error: error.message };
+    return { data: null, error: err.message };
   }
 }
 
@@ -32,9 +33,10 @@ export async function addTopic(name: string) {
     `;
     revalidatePath('/');
     return { data: rows[0] as Topic, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     console.error('Error adding topic:', error);
-    return { data: null, error: error.message };
+    return { data: null, error: err.message };
   }
 }
 
@@ -61,9 +63,10 @@ export async function getQuestions(topicId?: string) {
       `;
     }
     return { data: rows as Question[], error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     console.error('Error fetching questions:', error);
-    return { data: null, error: error.message };
+    return { data: null, error: err.message };
   }
 }
 
@@ -94,9 +97,10 @@ export async function createQuestion(formData: {
     `;
     revalidatePath('/');
     return { data: rows[0] as Question, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     console.error('Error creating question:', error);
-    return { data: null, error: error.message };
+    return { data: null, error: err.message };
   }
 }
 
@@ -144,9 +148,10 @@ export async function updateQuestion(
 
     revalidatePath('/');
     return { data: rows[0] as Question, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     console.error('Error updating question:', error);
-    return { data: null, error: error.message };
+    return { data: null, error: err.message };
   }
 }
 
@@ -159,8 +164,9 @@ export async function deleteQuestion(id: string) {
     await sql`DELETE FROM questions WHERE id = ${id}::uuid`;
     revalidatePath('/');
     return { error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     console.error('Error deleting question:', error);
-    return { error: error.message };
+    return { error: err.message };
   }
 }
