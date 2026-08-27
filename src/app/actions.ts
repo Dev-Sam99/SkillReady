@@ -1,5 +1,6 @@
 'use server';
 
+import { checkIsAdmin } from './authActions';
 import { sql, isNeonConfigured } from '@/lib/db';
 import { ConfidenceLevel, Question, Topic } from '@/types';
 import { revalidatePath } from 'next/cache';
@@ -20,6 +21,11 @@ export async function getTopics() {
 }
 
 export async function addTopic(name: string) {
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) {
+    return { data: null, error: 'UNAUTHORIZED: Admin access required' };
+  }
+
   if (!isNeonConfigured()) {
     return { data: { id: `t-${Date.now()}`, name }, error: null };
   }
@@ -76,6 +82,11 @@ export async function createQuestion(formData: {
   answer: string;
   confidence: ConfidenceLevel;
 }) {
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) {
+    return { data: null, error: 'UNAUTHORIZED: Admin access required' };
+  }
+
   if (!isNeonConfigured()) {
     return {
       data: {
@@ -104,6 +115,81 @@ export async function createQuestion(formData: {
   }
 }
 
+export async function bulkCreateQuestions(topicId: string, textContent: string) {
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) {
+    return { count: 0, error: 'UNAUTHORIZED: Admin access required' };
+  }
+
+  if (!topicId || !textContent.trim()) {
+    return { count: 0, error: 'Topic and Q&A content are required' };
+  }
+
+  // Code-fence aware splitter: only split on "---" lines outside of ``` code blocks
+  const lines = textContent.split(/\r?\n/);
+  const blocks: string[] = [];
+  let currentBlockLines: string[] = [];
+  let inCodeBlock = false;
+
+  for (const line of lines) {
+    if (line.trim().startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      currentBlockLines.push(line);
+    } else if (!inCodeBlock && line.trim() === '---') {
+      if (currentBlockLines.length > 0) {
+        blocks.push(currentBlockLines.join('\n').trim());
+        currentBlockLines = [];
+      }
+    } else {
+      currentBlockLines.push(line);
+    }
+  }
+
+  if (currentBlockLines.length > 0) {
+    blocks.push(currentBlockLines.join('\n').trim());
+  }
+
+  const parsedPairs: { question: string; answer: string }[] = [];
+
+  for (const block of blocks) {
+    const qMatch = block.match(/Q:\s*([\s\S]*?)(?=A:|$)/i);
+    const aMatch = block.match(/A:\s*([\s\S]*)/i);
+
+    if (qMatch && aMatch && qMatch[1].trim() && aMatch[1].trim()) {
+      parsedPairs.push({
+        question: qMatch[1].trim(),
+        answer: aMatch[1].trim(),
+      });
+    }
+  }
+
+  if (parsedPairs.length === 0) {
+    return { count: 0, error: 'No valid Q: / A: formatted blocks found' };
+  }
+
+  if (!isNeonConfigured()) {
+    return { count: parsedPairs.length, error: null };
+  }
+
+  try {
+    let insertedCount = 0;
+    for (const pair of parsedPairs) {
+      await sql`
+        INSERT INTO questions (topic_id, question, answer, confidence, last_reviewed)
+        VALUES (${topicId}::uuid, ${pair.question}, ${pair.answer}, 'weak', NOW())
+      `;
+      insertedCount++;
+    }
+
+    revalidatePath('/');
+    return { count: insertedCount, error: null };
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Error bulk adding questions:', error);
+    return { count: 0, error: err.message };
+  }
+}
+
 export async function updateQuestion(
   id: string,
   formData: {
@@ -113,6 +199,14 @@ export async function updateQuestion(
     confidence?: ConfidenceLevel;
   }
 ) {
+  // Anyone can self-rate confidence in practice mode; other edits require Admin
+  if (formData.question !== undefined || formData.answer !== undefined || formData.topic_id !== undefined) {
+    const isAdmin = await checkIsAdmin();
+    if (!isAdmin) {
+      return { data: null, error: 'UNAUTHORIZED: Admin access required' };
+    }
+  }
+
   if (!isNeonConfigured()) {
     return { data: null, error: null };
   }
@@ -120,7 +214,6 @@ export async function updateQuestion(
   try {
     let rows;
     if (formData.confidence !== undefined) {
-      // Confidence update -> update last_reviewed timestamp
       rows = await sql`
         UPDATE questions 
         SET 
@@ -156,6 +249,11 @@ export async function updateQuestion(
 }
 
 export async function deleteQuestion(id: string) {
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) {
+    return { error: 'UNAUTHORIZED: Admin access required' };
+  }
+
   if (!isNeonConfigured()) {
     return { error: null };
   }

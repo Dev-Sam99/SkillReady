@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Question, ConfidenceLevel } from '@/types';
 import { ConfidenceBadge } from './ConfidenceBadge';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import { ChevronDown, ChevronUp, Edit3, Trash2 } from 'lucide-react';
 
 interface QuestionRowProps {
@@ -50,9 +51,9 @@ export const QuestionRow: React.FC<QuestionRowProps> = ({
           >
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
-          <span className="text-sm font-medium text-stone-900 line-clamp-1">
-            {question.question}
-          </span>
+          <div className="text-sm font-medium text-stone-900 line-clamp-2">
+            <MarkdownRenderer content={question.question} />
+          </div>
         </div>
 
         {/* Column 2: Topic (2 cols) */}
@@ -100,8 +101,8 @@ export const QuestionRow: React.FC<QuestionRowProps> = ({
           <div className="text-xs font-mono font-semibold text-stone-400 uppercase tracking-wider">
             Detailed Solution & Answer
           </div>
-          <div className="p-4 bg-white rounded-lg border border-stone-200/80 text-xs md:text-sm text-stone-800 leading-relaxed whitespace-pre-line shadow-sm">
-            {question.answer}
+          <div className="p-4 bg-white rounded-lg border border-stone-200/80 shadow-sm">
+            <MarkdownRenderer content={question.answer} />
           </div>
         </div>
       )}
