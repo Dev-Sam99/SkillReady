@@ -9,7 +9,7 @@ import { QuestionCard } from '@/components/QuestionCard';
 import { QuestionModal } from '@/components/QuestionModal';
 import { DashboardStats } from '@/components/DashboardStats';
 import { ReviewDueSection } from '@/components/ReviewDueSection';
-import { Search, PlusCircle, Zap, RefreshCw, BookOpen } from 'lucide-react';
+import { Search, Plus, Terminal, RefreshCw, Layers } from 'lucide-react';
 
 export default function Home() {
   const [topics, setTopics] = useState<Topic[]>(MOCK_TOPICS);
@@ -19,7 +19,6 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
 
-  // Fetch topics and questions on mount
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -32,7 +31,6 @@ export default function Home() {
     if (questionsRes.data) setQuestions(questionsRes.data);
   };
 
-  // Topic Addition
   const handleAddTopic = async (name: string) => {
     const res = await addTopic(name);
     if (res.data) {
@@ -40,7 +38,6 @@ export default function Home() {
     }
   };
 
-  // Save / Edit Question
   const handleSaveQuestion = async (formData: {
     id?: string;
     topic_id: string;
@@ -49,7 +46,6 @@ export default function Home() {
     confidence: ConfidenceLevel;
   }) => {
     if (formData.id) {
-      // Update
       const res = await updateQuestion(formData.id, {
         topic_id: formData.topic_id,
         question: formData.question,
@@ -60,7 +56,6 @@ export default function Home() {
       if (res.data) {
         setQuestions((prev) => prev.map((q) => (q.id === formData.id ? res.data : q)));
       } else {
-        // Local state update fallback
         setQuestions((prev) =>
           prev.map((q) =>
             q.id === formData.id
@@ -70,7 +65,6 @@ export default function Home() {
         );
       }
     } else {
-      // Create
       const res = await createQuestion({
         topic_id: formData.topic_id,
         question: formData.question,
@@ -93,9 +87,7 @@ export default function Home() {
     }
   };
 
-  // Confidence Cycle
   const handleConfidenceCycle = async (id: string, newConfidence: ConfidenceLevel) => {
-    // Optimistic UI update
     setQuestions((prev) =>
       prev.map((q) =>
         q.id === id ? { ...q, confidence: newConfidence, last_reviewed: new Date().toISOString() } : q
@@ -105,13 +97,11 @@ export default function Home() {
     await updateQuestion(id, { confidence: newConfidence });
   };
 
-  // Delete Question
   const handleDeleteQuestion = async (id: string) => {
     setQuestions((prev) => prev.filter((q) => q.id !== id));
     await deleteQuestion(id);
   };
 
-  // Filtered Questions list
   const filteredQuestions = questions.filter((q) => {
     const matchesTopic = selectedTopicId === 'all' || q.topic_id === selectedTopicId;
     const matchesSearch =
@@ -121,7 +111,6 @@ export default function Home() {
     return matchesTopic && matchesSearch;
   });
 
-  // Calculate Progress bar for current selected topic
   const currentTopicQuestions = selectedTopicId === 'all' 
     ? questions 
     : questions.filter(q => q.topic_id === selectedTopicId);
@@ -135,19 +124,19 @@ export default function Home() {
     : topics.find(t => t.id === selectedTopicId)?.name || 'Topic';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Header / Branding */}
-      <header className="bg-slate-900/80 border-b border-slate-800 sticky top-0 z-40 backdrop-blur-md">
+    <div className="min-h-screen bg-[#08090a] text-zinc-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-black">
+      {/* Sleek Dark Developer Header */}
+      <header className="bg-[#0b0c0e]/90 border-b border-zinc-800/80 sticky top-0 z-40 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-600/30">
-              <Zap className="w-5 h-5 text-white" />
+            <div className="bg-emerald-500/10 border border-emerald-500/30 p-2 rounded-lg text-emerald-400">
+              <Terminal className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
-                SkillReady <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono font-medium">v1.0</span>
+              <h1 className="text-lg font-mono font-bold tracking-tight text-zinc-100 flex items-center gap-2">
+                SkillReady <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">v1.0</span>
               </h1>
-              <p className="text-xs text-slate-400">Interview Q&A Tracker & Spaced Repetition</p>
+              <p className="text-[11px] font-mono text-zinc-500">Terminal-Grade Interview Preparation & Spaced Repetition Engine</p>
             </div>
           </div>
 
@@ -157,20 +146,20 @@ export default function Home() {
               setEditingQuestion(null);
               setIsModalOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold shadow-md shadow-indigo-600/30 transition-all"
+            className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-black font-mono font-bold rounded-lg text-xs shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
           >
-            <PlusCircle className="w-4 h-4" />
-            <span>+ Add Question</span>
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>Add Question</span>
           </button>
         </div>
       </header>
 
-      {/* Main Container */}
+      {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Dashboard Overview */}
+        {/* Dashboard Analytics */}
         <DashboardStats questions={questions} topics={topics} />
 
-        {/* Review Due Spaced Repetition Banner */}
+        {/* Review Due Alert */}
         <ReviewDueSection
           questions={questions}
           onSelectQuestion={(q) => {
@@ -179,8 +168,8 @@ export default function Home() {
           }}
         />
 
-        {/* Topic Filter Bar */}
-        <div className="space-y-3 bg-slate-900/60 border border-slate-800 p-4 rounded-2xl shadow-lg">
+        {/* Topic Filter & Search Toolbar */}
+        <div className="space-y-3 bg-[#0e0f12] border border-zinc-800/80 p-4 rounded-xl shadow-xl">
           <TopicFilterBar
             topics={topics}
             selectedTopicId={selectedTopicId}
@@ -188,42 +177,42 @@ export default function Home() {
             onAddTopic={handleAddTopic}
           />
 
-          {/* Search bar & Topic Progress Bar */}
-          <div className="pt-3 border-t border-slate-800/80 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          {/* Search bar & Progress */}
+          <div className="pt-3 border-t border-zinc-800/60 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 font-mono">
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`Search questions in ${currentTopicName}...`}
-                className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                placeholder={`grep "${currentTopicName.toLowerCase()}"...`}
+                className="w-full pl-9 pr-4 py-2 bg-[#050607] border border-zinc-800/80 rounded-lg text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
               />
             </div>
 
-            {/* Per-topic Progress Bar */}
-            <div className="flex items-center gap-3 bg-slate-950/60 px-3.5 py-1.5 rounded-xl border border-slate-800 text-xs">
-              <span className="text-slate-400 font-medium">{currentTopicName} Progress:</span>
-              <div className="w-28 bg-slate-800 rounded-full h-2 overflow-hidden">
+            {/* Topic Progress Bar */}
+            <div className="flex items-center gap-3 bg-[#050607] px-3.5 py-2 rounded-lg border border-zinc-800/80 text-xs">
+              <span className="text-zinc-500">{currentTopicName}:</span>
+              <div className="w-28 bg-zinc-900 rounded-full h-1.5 overflow-hidden border border-zinc-800">
                 <div
                   className="bg-emerald-400 h-full rounded-full transition-all duration-300"
                   style={{ width: `${topicProgressPct}%` }}
                 />
               </div>
-              <span className="font-mono text-emerald-400 font-bold">{topicProgressPct}%</span>
+              <span className="text-emerald-400 font-bold">{topicProgressPct}%</span>
             </div>
           </div>
         </div>
 
-        {/* Question List */}
+        {/* Question Cards Grid */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-            <span>Showing {filteredQuestions.length} Questions</span>
+          <div className="flex items-center justify-between text-xs font-mono text-zinc-500">
+            <span>Query Results: {filteredQuestions.length} entries</span>
             <button
               onClick={fetchInitialData}
-              className="flex items-center gap-1 text-slate-400 hover:text-slate-200"
+              className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors"
             >
-              <RefreshCw className="w-3.5 h-3.5" /> Sync Data
+              <RefreshCw className="w-3.5 h-3.5" /> Reload DB
             </button>
           </div>
 
@@ -244,22 +233,12 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-12 text-center space-y-3">
-              <BookOpen className="w-10 h-10 text-slate-600 mx-auto" />
-              <h3 className="text-base font-semibold text-slate-300">No Questions Found</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                No interview questions match your current search query or selected topic filter.
+            <div className="bg-[#0e0f12] border border-zinc-800/80 rounded-xl p-12 text-center space-y-3 font-mono">
+              <Layers className="w-8 h-8 text-zinc-700 mx-auto" />
+              <h3 className="text-sm font-semibold text-zinc-300">0_RESULTS_RETURNED</h3>
+              <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+                No entries match the query criteria. Clear filters or add a new question card.
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingQuestion(null);
-                  setIsModalOpen(true);
-                }}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold"
-              >
-                + Add Question
-              </button>
             </div>
           )}
         </div>

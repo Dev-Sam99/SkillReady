@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Topic } from '@/types';
-import { Plus, Check, X } from 'lucide-react';
+import { Plus, Check, X, Terminal } from 'lucide-react';
 
 interface TopicFilterBarProps {
   topics: Topic[];
@@ -33,18 +33,18 @@ export const TopicFilterBar: React.FC<TopicFilterBarProps> = ({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 py-2 overflow-x-auto no-scrollbar">
+    <div className="flex flex-wrap items-center gap-2 py-1 overflow-x-auto no-scrollbar">
       {/* All Option Pill */}
       <button
         type="button"
         onClick={() => onSelectTopic('all')}
-        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+        className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all border ${
           selectedTopicId === 'all'
-            ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
-            : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700'
+            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/40 shadow-sm shadow-emerald-500/10'
+            : 'bg-zinc-900/60 text-zinc-400 border-zinc-800/80 hover:text-zinc-200 hover:border-zinc-700'
         }`}
       >
-        All Topics
+        <span className="text-zinc-600 mr-1">$</span>all_topics
       </button>
 
       {/* Dynamic Topic Pills */}
@@ -53,10 +53,10 @@ export const TopicFilterBar: React.FC<TopicFilterBarProps> = ({
           key={topic.id}
           type="button"
           onClick={() => onSelectTopic(topic.id)}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all border ${
             selectedTopicId === topic.id
-              ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
-              : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700'
+              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/40 shadow-sm shadow-emerald-500/10'
+              : 'bg-zinc-900/60 text-zinc-400 border-zinc-800/80 hover:text-zinc-200 hover:border-zinc-700'
           }`}
         >
           {topic.name}
@@ -71,13 +71,13 @@ export const TopicFilterBar: React.FC<TopicFilterBarProps> = ({
             autoFocus
             value={newTopicName}
             onChange={(e) => setNewTopicName(e.target.value)}
-            placeholder="New topic name..."
-            className="px-3 py-1 bg-slate-950 border border-indigo-500/50 rounded-full text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            placeholder="topic_name..."
+            className="px-3 py-1 bg-zinc-950 border border-emerald-500/50 rounded-lg text-xs font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
           <button
             type="submit"
             disabled={isSubmitting}
-            className="p-1 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white"
+            className="p-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40"
             title="Save Topic"
           >
             <Check className="w-3.5 h-3.5" />
@@ -85,7 +85,7 @@ export const TopicFilterBar: React.FC<TopicFilterBarProps> = ({
           <button
             type="button"
             onClick={() => setIsAdding(false)}
-            className="p-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400"
+            className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-zinc-200"
             title="Cancel"
           >
             <X className="w-3.5 h-3.5" />
@@ -95,9 +95,10 @@ export const TopicFilterBar: React.FC<TopicFilterBarProps> = ({
         <button
           type="button"
           onClick={() => setIsAdding(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono text-zinc-400 hover:text-emerald-400 bg-zinc-900/40 hover:bg-zinc-900 border border-dashed border-zinc-800 hover:border-emerald-500/40 transition-colors"
         >
-          <Plus className="w-3.5 h-3.5" /> Add topic
+          <Plus className="w-3 h-3 text-emerald-500" />
+          <span>new_topic</span>
         </button>
       )}
     </div>
