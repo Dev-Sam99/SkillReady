@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Question } from '@/types';
-import { Clock, ChevronRight, AlertCircle } from 'lucide-react';
+import { ChevronRight, AlertCircle } from 'lucide-react';
 import { ConfidenceBadge } from './ConfidenceBadge';
 
 interface ReviewDueSectionProps {

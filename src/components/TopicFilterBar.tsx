@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Topic } from '@/types';
-import { Plus, Check, X, Terminal } from 'lucide-react';
+import { Plus, Check, X } from 'lucide-react';
 
 interface TopicFilterBarProps {
   topics: Topic[];
