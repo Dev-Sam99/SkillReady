@@ -1,25 +1,24 @@
 import React from 'react';
+import { Logo } from './Logo';
 
-export const SkillReadyWordmark: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const SkillReadyWordmark: React.FC<{
+  className?: string;
+  logoSize?: number;
+  showTagline?: boolean;
+}> = ({ className = '', logoSize = 40, showTagline = true }) => {
   return (
-    <div className={`flex items-center gap-2.5 ${className}`}>
-      {/* Editorial Minimal Hexagon Checkmark Logo */}
-      <div className="w-6 h-6 rounded-md bg-stone-900 flex items-center justify-center text-white shadow-sm">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="w-3.5 h-3.5"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
+    <div className={`flex items-center gap-3 ${className}`}>
+      <Logo size={logoSize} />
+      <div className="flex flex-col justify-center">
+        <span className="font-display font-extrabold text-xl sm:text-2xl tracking-[0.01em] text-ink leading-none">
+          SkillReady
+        </span>
+        {showTagline && (
+          <span className="text-[11px] font-semibold text-slate font-sans mt-0.5 tracking-wide hidden sm:block">
+            Master Every Technical Interview — One Concept at a Time
+          </span>
+        )}
       </div>
-      <span className="font-serif-display text-lg font-semibold tracking-tight text-stone-900">
-        SkillReady
-      </span>
     </div>
   );
 };

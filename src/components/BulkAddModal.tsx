@@ -1,17 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Topic } from '@/types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Topic, Question } from '@/types';
 import { bulkCreateQuestions } from '@/app/actions';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { X, Layers, Sparkles, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, ListPlus, Sparkles, Eye, ChevronDown, ChevronUp, Upload, CheckCircle2, CircleAlert, Plus, Check } from 'lucide-react';
+import { CustomSelect } from './CustomSelect';
 
 interface BulkAddModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (newQuestions?: Question[], targetTopicId?: string) => void;
   topics: Topic[];
   defaultTopicId?: string;
+  onAddTopic?: (name: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const SAMPLE_TEMPLATE = `Q: What is Floyd's Cycle Detection algorithm?
@@ -37,19 +39,79 @@ export const BulkAddModal: React.FC<BulkAddModalProps> = ({
   onSuccess,
   topics,
   defaultTopicId,
+  onAddTopic,
 }) => {
   const [topicId, setTopicId] = useState('');
   const [rawText, setRawText] = useState('');
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [parsedPairs, setParsedPairs] = useState<{ question: string; answer: string }[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
+  // Inline topic creation states
+  const [isCreatingTopic, setIsCreatingTopic] = useState(false);
+  const [newTopicName, setNewTopicName] = useState('');
+  const [topicError, setTopicError] = useState<string | null>(null);
+  const [isCreatingTopicSubmitting, setIsCreatingTopicSubmitting] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   useEffect(() => {
     setTopicId(defaultTopicId && defaultTopicId !== 'all' ? defaultTopicId : topics[0]?.id || '');
   }, [defaultTopicId, topics, isOpen]);
 
-  // Code-fence aware detection count
+  const handleCreateTopicSubmit = async () => {
+    if (!newTopicName.trim() || !onAddTopic || isCreatingTopicSubmitting) return;
+    setTopicError(null);
+    setIsCreatingTopicSubmitting(true);
+
+    const result = await onAddTopic(newTopicName.trim());
+    setIsCreatingTopicSubmitting(false);
+
+    if (result.success) {
+      setNewTopicName('');
+      setIsCreatingTopic(false);
+    } else {
+      setTopicError(result.error || 'Failed to add topic');
+    }
+  };
+
+  const handleFileUpload = (file: File) => {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (!content) return;
+
+      setUploadedFileName(file.name);
+
+      if (file.name.endsWith('.json')) {
+        try {
+          const parsedJson = JSON.parse(content);
+          if (Array.isArray(parsedJson)) {
+            const formatted = parsedJson
+              .map((item) => {
+                const q = item.question || item.q || '';
+                const a = item.answer || item.a || '';
+                return q && a ? `Q: ${q}\nA: ${a}` : '';
+              })
+              .filter(Boolean)
+              .join('\n---\n');
+            setRawText(formatted);
+            return;
+          }
+        } catch {
+          setStatusMessage({ type: 'error', msg: 'Failed to parse JSON file structure.' });
+        }
+      }
+
+      setRawText(content);
+    };
+    reader.readAsText(file);
+  };
+
   useEffect(() => {
     if (!rawText.trim()) {
       setParsedPairs([]);
@@ -112,132 +174,214 @@ export const BulkAddModal: React.FC<BulkAddModalProps> = ({
     } else {
       setStatusMessage({ type: 'success', msg: `Successfully added ${res.count} questions!` });
       setTimeout(() => {
-        onSuccess();
+        onSuccess(res.data || [], topicId);
         onClose();
-      }, 1200);
+      }, 1000);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white border border-stone-200 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-fadeIn max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="glass-panel border border-white/95 rounded-3xl w-full max-w-2xl shadow-glass overflow-hidden animate-fadeIn max-h-[90vh] flex flex-col text-ink">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-stone-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-stone-900" />
-            <h2 className="text-base font-serif-display font-semibold text-stone-900">
-              Bulk Add Questions
+        <div className="px-6 py-4 border-b border-line/60 flex items-center justify-between bg-tint/40">
+          <div className="flex items-center gap-2.5">
+            <ListPlus className="w-6 h-6 text-deep" aria-hidden="true" />
+            <h2 className="text-xl font-display font-extrabold text-ink">
+              Bulk upload questions
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded text-stone-400 hover:text-stone-700"
+            aria-label="Close modal"
+            className="p-2 rounded-full text-slate hover:text-ink hover:bg-tint transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs md:text-sm overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-sm overflow-y-auto flex-1">
           <div>
-            <label className="block text-stone-600 mb-1 font-mono text-xs">Target Topic *</label>
-            <select
-              required
-              value={topicId}
-              onChange={(e) => setTopicId(e.target.value)}
-              className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-1 focus:ring-stone-900 focus:outline-none"
-            >
-              <option value="" disabled>Select a topic</option>
-              {topics.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1 font-mono text-xs">
-              <label className="text-stone-600">Paste Q&A Content (Q: ... A: ... --- format) *</label>
-              <button
-                type="button"
-                onClick={() => setRawText(SAMPLE_TEMPLATE)}
-                className="text-stone-500 hover:text-stone-900 flex items-center gap-1"
-              >
-                <Sparkles className="w-3 h-3" /> Insert Sample
-              </button>
-            </div>
-            <textarea
-              required
-              rows={7}
-              value={rawText}
-              onChange={(e) => setRawText(e.target.value)}
-              placeholder={`Q: What is Floyds algorithm?\nA: Slow and fast pointer approach.\n---\nQ: What is CAP theorem?\nA: Consistency, Availability, Partition tolerance.`}
-              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-900 font-mono text-xs leading-relaxed focus:ring-1 focus:ring-stone-900 focus:outline-none"
-            />
-          </div>
-
-          {/* Status Bar & Preview Toggle */}
-          <div className="flex items-center justify-between text-xs font-mono pt-1">
-            <div className="flex items-center gap-3">
-              <span className="text-stone-500">
-                Detected: <strong className="text-stone-900">{parsedPairs.length} questions</strong>
-              </span>
-
-              {parsedPairs.length > 0 && (
+            <div className="flex items-center justify-between mb-2 text-xs font-semibold uppercase tracking-wider">
+              <label className="text-ink">Target topic *</label>
+              {onAddTopic && (!isCreatingTopic ? (
                 <button
                   type="button"
-                  onClick={() => setShowPreview(!showPreview)}
-                  className="flex items-center gap-1 text-stone-600 hover:text-stone-900 underline"
+                  onClick={() => {
+                    setIsCreatingTopic(true);
+                    setTopicError(null);
+                  }}
+                  className="text-deep hover:underline flex items-center gap-1 font-sans text-xs font-semibold cursor-pointer"
                 >
-                  <Eye className="w-3 h-3" />
-                  <span>{showPreview ? 'Hide Markdown Preview' : 'Show Markdown Preview'}</span>
-                  {showPreview ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  <Plus className="w-4 h-4" aria-hidden="true" /> Create new topic
                 </button>
-              )}
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingTopic(false)}
+                  className="text-slate hover:text-ink font-sans text-xs font-semibold underline"
+                >
+                  Cancel topic creation
+                </button>
+              ))}
             </div>
 
-            {statusMessage && (
-              <span className={`px-2.5 py-1 rounded text-xs font-sans ${
-                statusMessage.type === 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'
-              }`}>
-                {statusMessage.msg}
-              </span>
+            {isCreatingTopic ? (
+              <div className="p-3.5 bg-tint/60 border border-line rounded-xl space-y-2 animate-fadeIn">
+                <label className="block text-xs font-semibold text-deep uppercase tracking-wider">New topic name</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="e.g. System Architecture..."
+                    value={newTopicName}
+                    onChange={(e) => setNewTopicName(e.target.value)}
+                    className="flex-1 px-3.5 py-2 bg-white border border-line rounded-lg text-sm text-ink placeholder-slate focus:outline-none focus:ring-2 focus:ring-deep font-medium"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateTopicSubmit}
+                    disabled={isCreatingTopicSubmitting || !newTopicName.trim()}
+                    className="px-4 py-2 bg-deep hover:bg-[#155AA3] text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-50"
+                  >
+                    <Check className="w-4 h-4" aria-hidden="true" /> Save
+                  </button>
+                </div>
+                {topicError && <p className="text-xs font-semibold text-[#B42318]">{topicError}</p>}
+              </div>
+            ) : (
+              <CustomSelect
+                options={topics.map((t) => ({ value: t.id, label: t.name }))}
+                value={topicId}
+                onChange={setTopicId}
+                placeholder="Select topic..."
+              />
             )}
           </div>
 
-          {/* Live Markdown Preview Container */}
+          {/* Quick Upload or Raw Paste */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-ink text-xs font-semibold uppercase tracking-wider">
+                Q&A text content or Markdown file *
+              </label>
+              <button
+                type="button"
+                onClick={() => setRawText(SAMPLE_TEMPLATE)}
+                className="text-xs font-semibold text-deep hover:underline flex items-center gap-1"
+              >
+                <Sparkles className="w-4 h-4 text-sky" aria-hidden="true" /> Load sample format
+              </button>
+            </div>
+
+            {/* File Upload Box */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".md,.txt,.json"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.[0]) {
+                  handleFileUpload(e.target.files[0]);
+                }
+              }}
+            />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-line hover:border-deep bg-white/70 p-4 rounded-xl text-center cursor-pointer transition-all space-y-1 group"
+            >
+              <Upload className="w-6 h-6 text-slate group-hover:text-deep mx-auto transition-colors" aria-hidden="true" />
+              <p className="text-sm text-slate font-semibold">
+                {uploadedFileName ? (
+                  <span className="text-deep font-mono">Loaded: {uploadedFileName}</span>
+                ) : (
+                  'Click to upload .md, .txt, or .json file'
+                )}
+              </p>
+            </div>
+
+            <textarea
+              rows={8}
+              required
+              value={rawText}
+              onChange={(e) => {
+                setRawText(e.target.value);
+                if (uploadedFileName) setUploadedFileName(null);
+              }}
+              placeholder={`Paste questions formatted as:\nQ: Question text here\nA: Answer explanation here\n---\nQ: Next question...`}
+              className="w-full p-3.5 bg-white border border-line rounded-xl text-ink placeholder-slate focus:outline-none focus:ring-2 focus:ring-deep font-mono text-xs leading-relaxed shadow-2xs"
+            />
+          </div>
+
+          {/* Live Parsing Counter */}
+          <div className="flex items-center justify-between p-3.5 bg-tint/60 rounded-xl text-sm font-semibold border border-line/60">
+            <span className="text-ink">
+              Parsed Questions: <strong className="text-[#166534]">{parsedPairs.length}</strong> valid blocks
+            </span>
+            {parsedPairs.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowPreview(!showPreview)}
+                className="text-deep hover:underline flex items-center gap-1 font-sans"
+              >
+                <Eye className="w-4 h-4" aria-hidden="true" />
+                {showPreview ? 'Hide preview' : 'Preview parsing'}
+                {showPreview ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
+              </button>
+            )}
+          </div>
+
+          {/* Preview Section */}
           {showPreview && parsedPairs.length > 0 && (
-            <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-4 max-h-60 overflow-y-auto animate-fadeIn">
-              <div className="text-[10px] font-mono text-stone-400 uppercase tracking-wider">
-                Live Markdown & Code Preview ({parsedPairs.length})
-              </div>
+            <div className="space-y-3 p-4 bg-white/90 border border-line rounded-xl max-h-60 overflow-y-auto animate-fadeIn">
+              <h4 className="text-xs font-semibold text-slate uppercase tracking-wider">
+                Parsed Content Preview
+              </h4>
               {parsedPairs.map((pair, idx) => (
-                <div key={idx} className="p-3 bg-white border border-stone-200/80 rounded-lg space-y-2">
-                  <div className="font-semibold text-stone-900">
-                    <MarkdownRenderer content={`Q: ${pair.question}`} />
-                  </div>
-                  <div className="text-stone-700 border-t border-stone-100 pt-2">
+                <div key={idx} className="p-3 bg-tint/30 rounded-lg border border-line space-y-1">
+                  <p className="font-semibold text-sm text-ink">Q{idx + 1}: {pair.question}</p>
+                  <div className="text-xs text-slate line-clamp-2">
                     <MarkdownRenderer content={pair.answer} />
                   </div>
                 </div>
               ))}
             </div>
           )}
-          {/* Form Actions */}
-          <div className="pt-3 border-t border-stone-200 flex items-center justify-end gap-2 font-mono text-xs">
+
+          {statusMessage && (
+            <div
+              className={`p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 ${
+                statusMessage.type === 'success'
+                  ? 'bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0]'
+                  : 'bg-[#FEE4E2] text-[#B42318] border border-[#FECDCA]'
+              }`}
+            >
+              {statusMessage.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5 text-[#166534]" aria-hidden="true" />
+              ) : (
+                <CircleAlert className="w-5 h-5 text-[#B42318]" aria-hidden="true" />
+              )}
+              <span>{statusMessage.msg}</span>
+            </div>
+          )}
+
+          {/* Footer Actions */}
+          <div className="pt-4 border-t border-line/60 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-full text-stone-500 hover:text-stone-800"
+              className="min-w-[44px] min-h-[44px] px-5 py-2.5 border border-line bg-white hover:bg-tint text-slate rounded-full text-sm font-semibold transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || parsedPairs.length === 0}
-              className="px-5 py-2 bg-stone-900 hover:bg-stone-800 disabled:opacity-50 text-white rounded-full font-medium shadow-sm transition-all"
+              className="min-w-[44px] min-h-[44px] px-6 py-2.5 bg-deep hover:bg-[#155AA3] text-white rounded-full text-sm font-semibold shadow-md transition-all active:scale-95 disabled:opacity-50"
             >
-              {isSubmitting ? 'Inserting...' : `Bulk Insert (${parsedPairs.length})`}
+              {isSubmitting ? 'Importing...' : `Import ${parsedPairs.length} questions`}
             </button>
           </div>
         </form>

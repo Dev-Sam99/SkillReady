@@ -1,4 +1,5 @@
 export type ConfidenceLevel = 'weak' | 'medium' | 'solid';
+export type QuestionTypeTag = 'Theoretical' | 'Coding' | 'Architecture' | 'Behavioral';
 
 export interface Topic {
   id: string;
@@ -13,6 +14,10 @@ export interface Question {
   answer: string;
   confidence: ConfidenceLevel;
   last_reviewed: string | null;
+  is_flagged?: boolean;
+  is_important?: boolean;
+  category_tag?: QuestionTypeTag;
+  notes?: string;
   created_at: string;
   updated_at: string;
   topics?: Topic;

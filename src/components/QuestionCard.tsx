@@ -32,7 +32,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   const formatDate = (isoString?: string | null) => {
     if (!isoString) return 'Never';
     const d = new Date(isoString);
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -110,7 +110,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
       {/* Footer metadata */}
       <div className="pt-2 border-t border-stone-100 dark:border-zinc-800/40 flex items-center justify-between text-[11px] font-mono text-stone-400 dark:text-zinc-500">
-        <span>last_reviewed: {formatDate(question.last_reviewed)}</span>
+        <span suppressHydrationWarning>last_reviewed: {formatDate(question.last_reviewed)}</span>
       </div>
 
       {/* Delete Confirmation Dialog */}

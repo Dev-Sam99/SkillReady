@@ -21,7 +21,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
     if (isInline) {
       return (
         <code
-          className="bg-[#f7f7f7] border border-stone-200 text-stone-800 px-1.5 py-0.5 rounded-md font-mono text-[0.85em]"
+          className="bg-tint border border-line/80 text-deep px-1.5 py-0.5 rounded-md font-mono text-[0.9em] font-semibold"
           {...props}
         >
           {children}
@@ -36,31 +36,31 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
     };
 
     return (
-      <div className="relative my-3 rounded-md overflow-hidden border border-stone-200/80 bg-[#f7f7f7] group">
-        <div className="bg-stone-200/60 px-3 py-1.5 flex items-center justify-between border-b border-stone-200/60">
-          <span className="text-[10px] font-mono text-stone-500 font-medium uppercase tracking-wider">
+      <div className="relative my-3 rounded-2xl overflow-hidden border border-line bg-white group shadow-2xs">
+        <div className="bg-tint/60 px-4 py-2 flex items-center justify-between border-b border-line">
+          <span className="text-xs font-mono text-slate font-semibold uppercase tracking-wider">
             {match ? match[1] : 'code'}
           </span>
           <button
             type="button"
             onClick={handleCopy}
-            className="flex items-center gap-1 text-[11px] font-mono text-stone-500 hover:text-stone-900 transition-colors p-1 rounded hover:bg-stone-300/50"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate hover:text-ink transition-colors p-1 rounded-lg hover:bg-white"
             title="Copy code to clipboard"
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-emerald-700 font-sans text-[10px]">Copied!</span>
+                <Check className="w-4 h-4 text-[#166534]" aria-hidden="true" />
+                <span className="text-[#166534] font-sans text-xs">Copied!</span>
               </>
             ) : (
               <>
-                <Copy className="w-3.5 h-3.5" />
-                <span className="font-sans text-[10px]">Copy</span>
+                <Copy className="w-4 h-4 text-deep" aria-hidden="true" />
+                <span className="font-sans text-xs">Copy</span>
               </>
             )}
           </button>
         </div>
-        <pre className="p-3.5 overflow-x-auto text-xs font-mono bg-[#f7f7f7] text-stone-900 m-0 leading-relaxed">
+        <pre className="p-4 overflow-x-auto text-sm font-mono bg-white text-ink m-0 leading-relaxed">
           <code className={codeClassName} {...props}>
             {children}
           </code>
@@ -70,19 +70,19 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
   };
 
   return (
-    <div className={`prose prose-stone max-w-none text-xs md:text-sm leading-relaxed ${className}`}>
+    <div className={`prose prose-slate max-w-none text-sm sm:text-base leading-relaxed ${className}`}>
       <ReactMarkdown
         rehypePlugins={[rehypeHighlight]}
         components={{
           code: CodeBlock,
           p({ children }) {
-            return <p className="mb-2 last:mb-0">{children}</p>;
+            return <p className="mb-2.5 last:mb-0 text-ink font-normal">{children}</p>;
           },
           ul({ children }) {
-            return <ul className="list-disc pl-5 my-2 space-y-1">{children}</ul>;
+            return <ul className="list-disc pl-5 my-2 space-y-1 text-ink">{children}</ul>;
           },
           ol({ children }) {
-            return <ol className="list-decimal pl-5 my-2 space-y-1">{children}</ol>;
+            return <ol className="list-decimal pl-5 my-2 space-y-1 text-ink">{children}</ol>;
           },
         }}
       >

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ConfidenceLevel } from '@/types';
+import { TriangleAlert, Minus, CircleCheck } from 'lucide-react';
 
 interface ConfidenceBadgeProps {
   confidence: ConfidenceLevel;
@@ -14,29 +15,30 @@ export const ConfidenceBadge: React.FC<ConfidenceBadgeProps> = ({
   onClick,
   interactive = true,
 }) => {
-  const getBadgeStyle = (level: ConfidenceLevel) => {
+  const getBadgeConfig = (level: ConfidenceLevel) => {
     switch (level) {
       case 'weak':
-        return 'bg-red-50 text-red-700 border-red-100 hover:bg-red-100/60';
+        return {
+          style: 'bg-[#FEE4E2] text-[#B42318] border-[#FECDCA] hover:bg-[#FECDCA]',
+          icon: <TriangleAlert className="w-4 h-4 shrink-0 text-[#B42318]" aria-hidden="true" />,
+          label: 'Weak',
+        };
       case 'medium':
-        return 'bg-amber-50 text-amber-800 border-amber-100 hover:bg-amber-100/60';
+        return {
+          style: 'bg-[#FEF0C7] text-[#93370D] border-[#FEDF89] hover:bg-[#FEDF89]',
+          icon: <Minus className="w-4 h-4 shrink-0 text-[#93370D]" aria-hidden="true" />,
+          label: 'Medium',
+        };
       case 'solid':
-        return 'bg-emerald-50 text-emerald-800 border-emerald-100 hover:bg-emerald-100/60';
-      default:
-        return 'bg-stone-100 text-stone-600 border-stone-200';
+        return {
+          style: 'bg-[#DCFCE7] text-[#166534] border-[#BBF7D0] hover:bg-[#BBF7D0]',
+          icon: <CircleCheck className="w-4 h-4 shrink-0 text-[#166534]" aria-hidden="true" />,
+          label: 'Solid',
+        };
     }
   };
 
-  const getLabel = (level: ConfidenceLevel) => {
-    switch (level) {
-      case 'weak':
-        return 'Weak';
-      case 'medium':
-        return 'Medium';
-      case 'solid':
-        return 'Solid';
-    }
-  };
+  const config = getBadgeConfig(confidence);
 
   return (
     <button
@@ -48,12 +50,13 @@ export const ConfidenceBadge: React.FC<ConfidenceBadgeProps> = ({
           onClick();
         }
       }}
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-all ${getBadgeStyle(
-        confidence
-      )} ${interactive ? 'cursor-pointer active:scale-95' : 'cursor-default'}`}
-      title={interactive ? 'Click to cycle state (Weak -> Medium -> Solid)' : undefined}
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-sm font-semibold tracking-tight transition-all shadow-2xs ${
+        config.style
+      } ${interactive ? 'cursor-pointer active:scale-95' : 'cursor-default'}`}
+      title={interactive ? 'Click to cycle state (Weak → Medium → Solid)' : undefined}
     >
-      <span>{getLabel(confidence)}</span>
+      {config.icon}
+      <span>{config.label}</span>
     </button>
   );
 };

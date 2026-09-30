@@ -30,73 +30,83 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafaf8] text-stone-900 flex flex-col justify-between font-sans selection:bg-stone-900 selection:text-white">
-      {/* Header */}
-      <header className="px-6 py-5 border-b border-stone-200/80">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <SkillReadyWordmark />
-          <a
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-mono text-stone-500 hover:text-stone-900 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to App
-          </a>
-        </div>
-      </header>
+    <div className="min-h-screen bg-mist text-ink flex flex-col justify-between font-sans selection:bg-deep selection:text-white relative">
+      {/* Background Blobs */}
+      <div className="sky-glass-blob-container" aria-hidden="true">
+        <div className="sky-glass-blob blob-1" />
+        <div className="sky-glass-blob blob-2" />
+      </div>
 
-      {/* Login Card */}
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="bg-white border border-stone-200/80 p-8 rounded-2xl shadow-sm w-full max-w-sm space-y-6 animate-fadeIn">
-          <div className="space-y-1.5 text-center">
-            <div className="w-10 h-10 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center mx-auto text-stone-900 mb-2">
-              <Lock className="w-5 h-5 stroke-[1.8]" />
-            </div>
-            <h1 className="text-xl font-serif-display font-semibold text-stone-900">
-              Admin Authentication
-            </h1>
-            <p className="text-xs text-stone-500 font-sans">
-              Enter your master password to unlock editing, bulk management, and PDF exports.
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4 font-mono text-xs">
-            <div>
-              <label className="block text-stone-600 mb-1.5 font-medium">ADMIN PASSWORD *</label>
-              <div className="relative">
-                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-                <input
-                  type="password"
-                  required
-                  autoFocus
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-900"
-                />
-              </div>
-            </div>
-
-            {error && (
-              <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs font-sans">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-full font-medium transition-all shadow-sm active:scale-95 text-xs"
+      <div className="relative z-10 flex flex-col min-h-screen justify-between">
+        {/* Header */}
+        <header className="px-6 py-4 border-b border-line/60 glass-panel">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <SkillReadyWordmark />
+            <a
+              href="/"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-slate hover:text-ink transition-colors"
             >
-              {isLoading ? 'Authenticating...' : 'Sign In as Admin'}
-            </button>
-          </form>
-        </div>
-      </main>
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to app
+            </a>
+          </div>
+        </header>
 
-      {/* Footer */}
-      <footer className="py-4 text-center text-xs font-mono text-stone-400">
-        SkillReady Admin Session Guard
-      </footer>
+        {/* Login Card */}
+        <main className="flex-1 flex items-center justify-center p-4">
+          <div className="glass-panel border border-white/95 p-8 rounded-3xl shadow-glass w-full max-w-sm space-y-6 animate-fadeIn">
+            <div className="space-y-2 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-tint border border-line flex items-center justify-center mx-auto text-deep mb-2">
+                <Lock className="w-6 h-6 stroke-[2]" aria-hidden="true" />
+              </div>
+              <h1 className="text-2xl font-display font-extrabold text-ink">
+                Admin Authentication
+              </h1>
+              <p className="text-sm text-slate font-medium leading-relaxed">
+                Enter your master password to unlock editing, bulk management, and PDF exports.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4 text-sm font-sans">
+              <div>
+                <label className="block text-ink mb-1.5 font-semibold text-xs uppercase tracking-wider">
+                  Admin password *
+                </label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate" aria-hidden="true" />
+                  <input
+                    type="password"
+                    required
+                    autoFocus
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-line rounded-xl text-ink placeholder-slate focus:outline-none focus:ring-2 focus:ring-deep shadow-2xs font-medium"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-3 bg-[#FEE4E2] border border-[#FECDCA] rounded-xl text-[#B42318] text-xs font-semibold">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 bg-deep hover:bg-[#155AA3] text-white rounded-full font-semibold transition-all shadow-md active:scale-95 text-sm focus-visible:ring-2 focus-visible:ring-deep focus-visible:outline-none"
+              >
+                {isLoading ? 'Authenticating...' : 'Sign in as admin'}
+              </button>
+            </form>
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="py-4 text-center text-xs font-semibold text-slate">
+          SkillReady Admin Session Guard
+        </footer>
+      </div>
     </div>
   );
 }
