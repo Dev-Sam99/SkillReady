@@ -14,13 +14,22 @@ export interface Question {
   answer: string;
   confidence: ConfidenceLevel;
   last_reviewed: string | null;
+  next_review_at?: string | null;
   is_flagged?: boolean;
   is_important?: boolean;
-  category_tag?: QuestionTypeTag;
+  category_tag?: QuestionTypeTag | string;
+  tags?: string[];
   notes?: string;
   created_at: string;
   updated_at: string;
   topics?: Topic;
+}
+
+export interface ReviewLog {
+  id: string;
+  question_id: string;
+  rating: ConfidenceLevel;
+  reviewed_at: string;
 }
 
 export interface TopicWithStats extends Topic {

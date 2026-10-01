@@ -3,7 +3,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Topic, Question, ConfidenceLevel } from '@/types';
 import { MOCK_TOPICS, MOCK_QUESTIONS } from '@/lib/mockData';
-import { getTopics, addTopic, getQuestions, createQuestion, updateQuestion, deleteQuestion } from './actions';
+import {
+  getTopics,
+  addTopic,
+  getQuestions,
+  createQuestion,
+  updateQuestion,
+  deleteQuestion,
+  updateQuestionFlags,
+} from './actions';
 import { checkIsAdmin, logoutAdmin } from './authActions';
 
 import { Header } from '@/components/Header';
@@ -19,11 +27,12 @@ export default function Home() {
   const [topics, setTopics] = useState<Topic[]>(MOCK_TOPICS);
   const [questions, setQuestions] = useState<Question[]>(MOCK_QUESTIONS);
   const [selectedTopicId, setSelectedTopicId] = useState<string>('all');
+  const [selectedTag, setSelectedTag] = useState<string>('all');
   const [markerFilter, setMarkerFilter] = useState<'all' | 'flagged' | 'important'>('all');
   const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [confidenceFilter, setConfidenceFilter] = useState<'all' | ConfidenceLevel>('all');
-  
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,6 +43,7 @@ export default function Home() {
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
+  const [practiceFilterAll, setPracticeFilterAll] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
 
@@ -77,7 +87,6 @@ export default function Home() {
       }
     }
 
-    // Ensure migration for flagged / important booleans
     const migratedQuestions = loadedQuestions.map((q) => ({
       ...q,
       is_flagged: q.is_flagged ?? false,
@@ -88,13 +97,13 @@ export default function Home() {
     // Restore last selected topic & question from localStorage
     if (typeof window !== 'undefined') {
       const savedTopic = localStorage.getItem('skillready_last_topic');
-      if (savedTopic) {
-        setSelectedTopicId(savedTopic);
-      }
+      if (savedTopic) setSelectedTopicId(savedTopic);
+
       const savedMarker = localStorage.getItem('skillready_last_marker');
       if (savedMarker && (savedMarker === 'all' || savedMarker === 'flagged' || savedMarker === 'important')) {
         setMarkerFilter(savedMarker as 'all' | 'flagged' | 'important');
       }
+
       const savedQId = localStorage.getItem('skillready_last_q');
       if (savedQId && migratedQuestions.some((q) => q.id === savedQId)) {
         setSelectedQuestionId(savedQId);
@@ -136,6 +145,13 @@ export default function Home() {
     }
   };
 
+  const handleSelectTag = (tag: string) => {
+    setSelectedTag(tag);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('skillready_last_tag', tag);
+    }
+  };
+
   const handleSelectQuestion = (question: Question) => {
     setSelectedQuestionId(question.id);
     setIsMobileDrawerOpen(false);
@@ -144,12 +160,13 @@ export default function Home() {
     }
   };
 
-  // Filtered & sorted question list for navigation / index calculations
+  // Filtered & sorted question list
   const getFilteredQuestions = useCallback(() => {
     return questions
       .filter((q) => {
-        if (selectedTopicId !== 'all' && q.topic_id !== selectedTopicId) {
-          return false;
+        if (selectedTopicId !== 'all' && q.topic_id !== selectedTopicId) return false;
+        if (selectedTag !== 'all') {
+          if (!q.tags || !q.tags.includes(selectedTag)) return false;
         }
         if (markerFilter === 'flagged' && !q.is_flagged) return false;
         if (markerFilter === 'important' && !q.is_important) return false;
@@ -157,19 +174,16 @@ export default function Home() {
         if (searchQuery.trim()) {
           const qText = q.question.toLowerCase();
           const aText = q.answer.toLowerCase();
+          const tagText = (q.tags || []).join(' ').toLowerCase();
+          const notesText = (q.notes || '').toLowerCase();
           const sTerm = searchQuery.toLowerCase();
-          if (!qText.includes(sTerm) && !aText.includes(sTerm)) return false;
+          if (!qText.includes(sTerm) && !aText.includes(sTerm) && !tagText.includes(sTerm) && !notesText.includes(sTerm)) {
+            return false;
+          }
         }
         return true;
-      })
-      .sort((a, b) => {
-        if (confidenceFilter !== 'all') {
-          const order: Record<ConfidenceLevel, number> = { weak: 0, medium: 1, solid: 2 };
-          return order[a.confidence] - order[b.confidence];
-        }
-        return 0; // Stable order to prevent index shifting on confidence cycle
       });
-  }, [questions, selectedTopicId, markerFilter, confidenceFilter, searchQuery]);
+  }, [questions, selectedTopicId, selectedTag, markerFilter, confidenceFilter, searchQuery]);
 
   const activeQuestions = getFilteredQuestions();
   const currentQuestionIndex = activeQuestions.findIndex((q) => q.id === selectedQuestionId);
@@ -193,28 +207,32 @@ export default function Home() {
   }, [activeQuestions, currentQuestionIndex]);
 
   // Actions
-  const handleToggleFlag = useCallback((q: Question) => {
+  const handleToggleFlag = useCallback(async (q: Question) => {
+    const updatedVal = !q.is_flagged;
     setQuestions((prev) => {
       const updated = prev.map((item) =>
-        item.id === q.id ? { ...item, is_flagged: !item.is_flagged } : item
+        item.id === q.id ? { ...item, is_flagged: updatedVal } : item
       );
       if (typeof window !== 'undefined') {
         localStorage.setItem('skillready_questions', JSON.stringify(updated));
       }
       return updated;
     });
+    await updateQuestionFlags(q.id, { is_flagged: updatedVal });
   }, []);
 
-  const handleToggleImportant = useCallback((q: Question) => {
+  const handleToggleImportant = useCallback(async (q: Question) => {
+    const updatedVal = !q.is_important;
     setQuestions((prev) => {
       const updated = prev.map((item) =>
-        item.id === q.id ? { ...item, is_important: !item.is_important } : item
+        item.id === q.id ? { ...item, is_important: updatedVal } : item
       );
       if (typeof window !== 'undefined') {
         localStorage.setItem('skillready_questions', JSON.stringify(updated));
       }
       return updated;
     });
+    await updateQuestionFlags(q.id, { is_important: updatedVal });
   }, []);
 
   const handleCycleConfidence = async (q: Question) => {
@@ -396,7 +414,7 @@ export default function Home() {
       } else if (e.key === '/') {
         e.preventDefault();
         if (isMobileDrawerOpen) setIsMobileDrawerOpen(false);
-        searchInputRef.current?.focus();
+        setTimeout(() => searchInputRef.current?.focus(), 50);
       }
     };
 
@@ -409,13 +427,8 @@ export default function Home() {
     : 'Topics';
 
   return (
-    <div className="h-screen bg-page-bg text-ink flex flex-col font-sans selection:bg-deep selection:text-white w-full overflow-hidden relative">
-      {/* 3 Fixed Blurred Background Blobs */}
-      <div className="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#7CC4FA] blur-[70px] opacity-75 rounded-full pointer-events-none z-0" />
-      <div className="fixed top-[40%] right-[-10%] w-[550px] h-[550px] bg-[#BFD3E6] blur-[70px] opacity-70 rounded-full pointer-events-none z-0" />
-      <div className="fixed bottom-[-10%] left-[20%] w-[600px] h-[600px] bg-[#A5D8FF] blur-[70px] opacity-75 rounded-full pointer-events-none z-0" />
-
-      {/* Glass Header Pill */}
+    <div className="min-h-screen bg-[#EEF3E8] text-[#1F2D1F] flex flex-col font-sans selection:bg-[#2F5D3A] selection:text-white w-full overflow-x-hidden relative">
+      {/* Header */}
       <Header
         isAdmin={isAdmin}
         onAddQuestion={() => {
@@ -425,32 +438,35 @@ export default function Home() {
         onDownloadPDF={handleDownloadPDF}
         onDownloadMarkdown={handleDownloadMarkdown}
         onOpenBulkAdd={() => setIsBulkModalOpen(true)}
-        onOpenPractice={() => setIsPracticeOpen(true)}
+        onOpenPractice={() => {
+          setPracticeFilterAll(true);
+          setIsPracticeOpen(true);
+        }}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
         onLogout={handleLogout}
       />
 
-      {/* Mobile-Only Top Navigation Bar (< 860px) */}
-      <div className="min-[860px]:hidden px-3 sm:px-6 mb-3 flex items-center justify-between z-20">
-        <button
-          type="button"
-          onClick={() => setIsMobileDrawerOpen(true)}
-          aria-label="Open topics & questions drawer"
-          className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-full bg-white/90 border border-line text-ink font-semibold text-xs shadow-2xs hover:bg-white transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-deep"
-        >
-          <Menu className="w-5 h-5 text-deep" aria-hidden="true" />
-          <span>Menu</span>
-        </button>
+      {/* Main Workspace Area */}
+      <div className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-6 h-[calc(100vh-95px)] min-h-0 overflow-hidden relative z-10 flex flex-col">
+        {/* Mobile Top Bar (< 860px) */}
+        <div className="min-[860px]:hidden mb-3 flex items-center justify-between shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsMobileDrawerOpen(true)}
+            aria-label="Open topics & questions drawer"
+            className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-full bg-white border border-[#D9E4D0] text-[#1F2D1F] font-semibold text-xs shadow-subtle hover:bg-[#EEF3E8] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5D3A] cursor-pointer"
+          >
+            <Menu className="w-5 h-5 text-[#2F5D3A]" aria-hidden="true" />
+            <span>Questions</span>
+          </button>
 
-        <span className="text-xs font-semibold text-slate font-sans bg-white/80 border border-line/60 px-3.5 py-1.5 rounded-full shadow-2xs">
-          {currentTopicName} · {activeQuestions.length > 0 ? `${currentQuestionIndex + 1}/${activeQuestions.length}` : '0/0'}
-        </span>
-      </div>
+          <span className="text-xs font-semibold text-[#566656] bg-white border border-[#D9E4D0] px-3.5 py-1.5 rounded-full shadow-subtle">
+            {currentTopicName} · {activeQuestions.length > 0 ? `${currentQuestionIndex + 1}/${activeQuestions.length}` : '0/0'}
+          </span>
+        </div>
 
-      {/* Main Split-Pane Workspace Area */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-4 h-[calc(100vh-85px)] min-h-0 overflow-hidden relative z-10">
         {isLoading ? (
-          <div className="h-full bg-white/70 backdrop-blur-md rounded-3xl border border-white/95 animate-pulse shadow-glass" />
+          <div className="h-full bg-white rounded-[22px] border border-[#D9E4D0] animate-pulse shadow-subtle" />
         ) : (
           <div className="h-full flex gap-4 min-h-0 overflow-hidden">
             {/* Desktop Left Navigation Panel (>= 860px wide, ~350px width) */}
@@ -459,12 +475,14 @@ export default function Home() {
                 topics={topics}
                 questions={questions}
                 selectedTopicId={selectedTopicId}
+                selectedTag={selectedTag}
                 markerFilter={markerFilter}
                 selectedQuestionId={selectedQuestionId}
                 searchQuery={searchQuery}
                 confidenceFilter={confidenceFilter}
                 searchInputRef={searchInputRef}
                 onSelectTopicId={handleSelectTopicId}
+                onSelectTag={handleSelectTag}
                 onSelectMarkerFilter={handleSelectMarkerFilter}
                 onSelectQuestion={handleSelectQuestion}
                 onSearchChange={setSearchQuery}
@@ -476,7 +494,7 @@ export default function Home() {
               />
             </aside>
 
-            {/* Main Answer Panel (Desktop Right Pane / Mobile Full Screen) */}
+            {/* Main Answer Panel */}
             <section ref={answerContainerRef} className="flex-1 min-w-0 h-full min-h-0">
               <AnswerPanel
                 question={selectedQuestion}
@@ -497,31 +515,38 @@ export default function Home() {
                   setEditingQuestion(null);
                   setIsQuestionModalOpen(true);
                 }}
+                onFilterByTag={(tag) => {
+                  handleSelectTag(tag);
+                }}
+                onUpdateQuestion={(updated) => {
+                  const newList = questions.map((q) => (q.id === updated.id ? updated : q));
+                  saveQuestionsState(newList);
+                }}
               />
             </section>
           </div>
         )}
-      </main>
+      </div>
 
       {/* Mobile Left Drawer Overlay (< 860px) */}
       {isMobileDrawerOpen && (
         <div className="fixed inset-0 z-50 min-[860px]:hidden animate-fadeIn">
           {/* Backdrop Dim Overlay */}
           <div
-            className="fixed inset-0 bg-ink/50 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-[#1F2D1F]/50 transition-opacity"
             onClick={() => setIsMobileDrawerOpen(false)}
             aria-hidden="true"
           />
 
-          {/* Left Drawer Container (86-88% width) */}
-          <div className="fixed top-0 left-0 bottom-0 z-50 w-[88%] max-w-[360px] bg-page-bg p-3 shadow-2xl flex flex-col animate-slideInLeft border-r border-line">
-            <div className="flex items-center justify-between pb-2 mb-2 border-b border-line px-2">
-              <span className="font-display font-bold text-base text-ink">Topics & Questions</span>
+          {/* Left Drawer Container (88% width) */}
+          <div className="fixed top-0 left-0 bottom-0 z-50 w-[88%] max-w-[360px] bg-[#EEF3E8] p-3 shadow-2xl flex flex-col border-r border-[#D9E4D0]">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#D9E4D0] px-2">
+              <span className="font-display font-bold text-base text-[#1F2D1F]">Questions</span>
               <button
                 type="button"
                 onClick={() => setIsMobileDrawerOpen(false)}
                 aria-label="Close drawer"
-                className="w-10 h-10 inline-flex items-center justify-center rounded-full text-slate hover:text-ink hover:bg-tint"
+                className="w-10 h-10 inline-flex items-center justify-center rounded-full text-[#566656] hover:text-[#1F2D1F] hover:bg-white cursor-pointer"
               >
                 <X className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -532,12 +557,14 @@ export default function Home() {
                 topics={topics}
                 questions={questions}
                 selectedTopicId={selectedTopicId}
+                selectedTag={selectedTag}
                 markerFilter={markerFilter}
                 selectedQuestionId={selectedQuestionId}
                 searchQuery={searchQuery}
                 confidenceFilter={confidenceFilter}
                 searchInputRef={searchInputRef}
                 onSelectTopicId={handleSelectTopicId}
+                onSelectTag={handleSelectTag}
                 onSelectMarkerFilter={handleSelectMarkerFilter}
                 onSelectQuestion={handleSelectQuestion}
                 onSearchChange={setSearchQuery}
@@ -594,6 +621,7 @@ export default function Home() {
         onClose={() => setIsPracticeOpen(false)}
         questions={questions}
         topics={topics}
+        practiceAll={practiceFilterAll}
       />
 
       <ShortcutsModal

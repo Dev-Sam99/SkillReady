@@ -50,6 +50,7 @@ export const MOCK_QUESTIONS: Question[] = [
     "question": "How does Angular's Change Detection mechanism work under the hood, and how do you optimize it with OnPush?",
     "answer": "Angular uses `zone.js` to monkey-patch asynchronous browser APIs (XHR, setTimeout, DOM events). When an async event fires, `zone.js` triggers change detection top-down from the root component. \n\nIn a 5+ YOE production app, default change detection (`ChangeDetectionStrategy.Default`) checks every component on every tick, causing severe performance drops in heavy UIs. \n\nTo optimize:\n1. Use `ChangeDetectionStrategy.OnPush`: Component is checked ONLY when an `@Input()` reference changes, an event originates from component/children, or manually triggered via `ChangeDetectorRef.markForCheck()`.\n2. Use Immutable Data patterns (RxJS `BehaviorSubject` or Signals).\n\n```typescript\n@Component({\n  selector: 'app-user-profile',\n  template: `<div>{{ user().name }}</div>`,\n  changeDetection: ChangeDetectionStrategy.OnPush\n})\nexport class UserProfileComponent {\n  user = input.required<User>(); // Using modern Signals input\n}\n```",
     "confidence": "weak",
+    "tags": ["Google", "Amazon"],
     "last_reviewed": null,
     "created_at": "2026-09-24T12:00:00.000Z",
     "updated_at": "2026-09-24T12:00:00.000Z"
@@ -60,6 +61,7 @@ export const MOCK_QUESTIONS: Question[] = [
     "question": "What is the difference between Angular Signals and RxJS Observables, and when should you use each?",
     "answer": "**Signals** (introduced in Angular 16+) provide fine-grained reactivity. They track dependencies automatically without subscription overhead or memory leak risks, and operate synchronously.\n\n**RxJS Observables** represent async data streams over time (HTTP requests, WebSockets, complex event compositions).\n\n**Senior Recommendation:** Use Signals for UI state, computed properties, and local component reactivity. Use RxJS for asynchronous streams, cancellation (`switchMap`), debounce (`debounceTime`), or retry mechanisms.\n\n```typescript\n// Signals for synchronous UI state\nconst count = signal(0);\nconst doubleCount = computed(() => count() * 2);\n\n// RxJS for async HTTP & debouncing search inputs\nthis.searchControl.valueChanges.pipe(\n  debounceTime(300),\n  distinctUntilChanged(),\n  switchMap(term => this.userService.search(term))\n).subscribe(results => this.results.set(results));\n```",
     "confidence": "weak",
+    "tags": ["Meta", "Microsoft"],
     "last_reviewed": null,
     "created_at": "2026-09-24T12:00:00.000Z",
     "updated_at": "2026-09-24T12:00:00.000Z"
@@ -70,6 +72,7 @@ export const MOCK_QUESTIONS: Question[] = [
     "question": "How do you handle Memory Leaks caused by RxJS Subscriptions in Angular?",
     "answer": "In long-lived SPA applications, failing to unsubscribe from infinite Observables (e.g. `interval`, route parameters, global stores) causes memory leaks.\n\n**Solutions for 5+ YOE Developers:**\n1. **Prefer Async Pipe (`| async`):** Handles subscription & unsubscription automatically in template.\n2. **`takeUntilDestroyed` (Angular 16+):** Automatically unsubscribes when the injection context (Component/Service) is destroyed.\n3. **`DestroyRef` or `takeUntil(this.destroy$)`:** For legacy components.\n\n```typescript\n@Component({...})\nexport class DataFeedComponent implements OnInit {\n  private destroyRef = inject(DestroyRef);\n  private dataService = inject(DataService);\n\n  ngOnInit() {\n    this.dataService.stream$\n      .pipe(takeUntilDestroyed(this.destroyRef))\n      .subscribe(data => this.processData(data));\n  }\n}\n```",
     "confidence": "weak",
+    "tags": ["Google", "Uber"],
     "last_reviewed": null,
     "created_at": "2026-09-24T12:00:00.000Z",
     "updated_at": "2026-09-24T12:00:00.000Z"

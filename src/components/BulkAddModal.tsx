@@ -181,21 +181,21 @@ export const BulkAddModal: React.FC<BulkAddModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="glass-panel border border-white/95 rounded-3xl w-full max-w-2xl shadow-glass overflow-hidden animate-fadeIn max-h-[90vh] flex flex-col text-ink">
+    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+      <div className="bg-white border-2 border-[#D9E4D0] rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-scaleUp max-h-[90vh] flex flex-col text-[#1F2D1F] relative">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-line/60 flex items-center justify-between bg-tint/40">
+        <div className="px-6 py-4 border-b border-[#D9E4D0] flex items-center justify-between bg-[#F5FAF4]">
           <div className="flex items-center gap-2.5">
-            <ListPlus className="w-6 h-6 text-deep" aria-hidden="true" />
-            <h2 className="text-xl font-display font-extrabold text-ink">
-              Bulk upload questions
+            <ListPlus className="w-6 h-6 text-[#2F5D3A]" aria-hidden="true" />
+            <h2 className="text-xl font-display font-extrabold text-[#1F2D1F]">
+              Bulk Upload Questions
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="p-2 rounded-full text-slate hover:text-ink hover:bg-tint transition-colors"
+            className="p-2 rounded-full text-slate-500 hover:text-[#1F2D1F] hover:bg-[#EAF3EB] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" aria-hidden="true" />
           </button>
@@ -205,7 +205,7 @@ export const BulkAddModal: React.FC<BulkAddModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-sm overflow-y-auto flex-1">
           <div>
             <div className="flex items-center justify-between mb-2 text-xs font-semibold uppercase tracking-wider">
-              <label className="text-ink">Target topic *</label>
+              <label className="text-[#1F2D1F] font-bold">Target topic *</label>
               {onAddTopic && (!isCreatingTopic ? (
                 <button
                   type="button"
@@ -213,15 +213,15 @@ export const BulkAddModal: React.FC<BulkAddModalProps> = ({
                     setIsCreatingTopic(true);
                     setTopicError(null);
                   }}
-                  className="text-deep hover:underline flex items-center gap-1 font-sans text-xs font-semibold cursor-pointer"
+                  className="text-[#2F5D3A] hover:text-[#1B4B29] bg-[#EAF3EB] hover:bg-[#D9E4D0] px-3 py-1 rounded-lg border border-[#D9E4D0] font-bold flex items-center gap-1 text-xs cursor-pointer transition-colors"
                 >
-                  <Plus className="w-4 h-4" aria-hidden="true" /> Create new topic
+                  <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Create new topic
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={() => setIsCreatingTopic(false)}
-                  className="text-slate hover:text-ink font-sans text-xs font-semibold underline"
+                  className="text-slate-600 hover:text-slate-900 bg-slate-100 px-3 py-1 rounded-lg border border-slate-300 font-bold text-xs underline cursor-pointer"
                 >
                   Cancel topic creation
                 </button>
@@ -229,8 +229,8 @@ export const BulkAddModal: React.FC<BulkAddModalProps> = ({
             </div>
 
             {isCreatingTopic ? (
-              <div className="p-3.5 bg-tint/60 border border-line rounded-xl space-y-2 animate-fadeIn">
-                <label className="block text-xs font-semibold text-deep uppercase tracking-wider">New topic name</label>
+              <div className="p-3.5 bg-[#F5FAF4] border border-[#D9E4D0] rounded-xl space-y-2 animate-fadeIn">
+                <label className="block text-xs font-extrabold text-[#2F5D3A] uppercase tracking-wider">New topic name</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -238,18 +238,18 @@ export const BulkAddModal: React.FC<BulkAddModalProps> = ({
                     placeholder="e.g. System Architecture..."
                     value={newTopicName}
                     onChange={(e) => setNewTopicName(e.target.value)}
-                    className="flex-1 px-3.5 py-2 bg-white border border-line rounded-lg text-sm text-ink placeholder-slate focus:outline-none focus:ring-2 focus:ring-deep font-medium"
+                    className="flex-1 px-3.5 py-2 bg-white border border-[#D9E4D0] rounded-lg text-sm text-[#1F2D1F] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2F5D3A] font-medium"
                   />
                   <button
                     type="button"
                     onClick={handleCreateTopicSubmit}
                     disabled={isCreatingTopicSubmitting || !newTopicName.trim()}
-                    className="px-4 py-2 bg-deep hover:bg-[#155AA3] text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-50"
+                    className="px-4 py-2 bg-[#2F5D3A] hover:bg-[#1B4B29] text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-all disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed cursor-pointer"
                   >
                     <Check className="w-4 h-4" aria-hidden="true" /> Save
                   </button>
                 </div>
-                {topicError && <p className="text-xs font-semibold text-[#B42318]">{topicError}</p>}
+                {topicError && <p className="text-xs font-semibold text-[#C2412D]">{topicError}</p>}
               </div>
             ) : (
               <CustomSelect
@@ -264,15 +264,15 @@ export const BulkAddModal: React.FC<BulkAddModalProps> = ({
           {/* Quick Upload or Raw Paste */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="block text-ink text-xs font-semibold uppercase tracking-wider">
-                Q&A text content or Markdown file *
+              <label className="block text-[#1F2D1F] text-xs font-bold uppercase tracking-wider">
+                Q&amp;A text content or Markdown file *
               </label>
               <button
                 type="button"
                 onClick={() => setRawText(SAMPLE_TEMPLATE)}
-                className="text-xs font-semibold text-deep hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-[#2F5D3A] hover:text-[#1B4B29] bg-[#EAF3EB] hover:bg-[#D9E4D0] px-3 py-1 rounded-lg border border-[#D9E4D0] flex items-center gap-1 cursor-pointer transition-colors"
               >
-                <Sparkles className="w-4 h-4 text-sky" aria-hidden="true" /> Load sample format
+                <Sparkles className="w-3.5 h-3.5 text-[#2F5D3A]" aria-hidden="true" /> Load sample format
               </button>
             </div>
 
@@ -290,12 +290,12 @@ export const BulkAddModal: React.FC<BulkAddModalProps> = ({
             />
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-line hover:border-deep bg-white/70 p-4 rounded-xl text-center cursor-pointer transition-all space-y-1 group"
+              className="border-2 border-dashed border-[#D9E4D0] hover:border-[#2F5D3A] bg-[#F7FAF6] hover:bg-white p-4 rounded-xl text-center cursor-pointer transition-all space-y-1 group"
             >
-              <Upload className="w-6 h-6 text-slate group-hover:text-deep mx-auto transition-colors" aria-hidden="true" />
-              <p className="text-sm text-slate font-semibold">
+              <Upload className="w-6 h-6 text-slate-500 group-hover:text-[#2F5D3A] mx-auto transition-colors" aria-hidden="true" />
+              <p className="text-sm text-slate-700 font-bold">
                 {uploadedFileName ? (
-                  <span className="text-deep font-mono">Loaded: {uploadedFileName}</span>
+                  <span className="text-[#2F5D3A] font-mono">Loaded: {uploadedFileName}</span>
                 ) : (
                   'Click to upload .md, .txt, or .json file'
                 )}
@@ -303,7 +303,7 @@ export const BulkAddModal: React.FC<BulkAddModalProps> = ({
             </div>
 
             <textarea
-              rows={8}
+              rows={7}
               required
               value={rawText}
               onChange={(e) => {
@@ -311,20 +311,20 @@ export const BulkAddModal: React.FC<BulkAddModalProps> = ({
                 if (uploadedFileName) setUploadedFileName(null);
               }}
               placeholder={`Paste questions formatted as:\nQ: Question text here\nA: Answer explanation here\n---\nQ: Next question...`}
-              className="w-full p-3.5 bg-white border border-line rounded-xl text-ink placeholder-slate focus:outline-none focus:ring-2 focus:ring-deep font-mono text-xs leading-relaxed shadow-2xs"
+              className="w-full p-3.5 bg-white border border-[#D9E4D0] rounded-xl text-[#1F2D1F] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2F5D3A] font-mono text-xs leading-relaxed shadow-xs"
             />
           </div>
 
           {/* Live Parsing Counter */}
-          <div className="flex items-center justify-between p-3.5 bg-tint/60 rounded-xl text-sm font-semibold border border-line/60">
-            <span className="text-ink">
+          <div className="flex items-center justify-between p-3.5 bg-[#F5FAF4] rounded-xl text-sm font-semibold border border-[#D9E4D0]">
+            <span className="text-[#1F2D1F]">
               Parsed Questions: <strong className="text-[#166534]">{parsedPairs.length}</strong> valid blocks
             </span>
             {parsedPairs.length > 0 && (
               <button
                 type="button"
                 onClick={() => setShowPreview(!showPreview)}
-                className="text-deep hover:underline flex items-center gap-1 font-sans"
+                className="text-[#2F5D3A] hover:underline flex items-center gap-1 font-sans font-bold cursor-pointer"
               >
                 <Eye className="w-4 h-4" aria-hidden="true" />
                 {showPreview ? 'Hide preview' : 'Preview parsing'}
@@ -335,14 +335,14 @@ export const BulkAddModal: React.FC<BulkAddModalProps> = ({
 
           {/* Preview Section */}
           {showPreview && parsedPairs.length > 0 && (
-            <div className="space-y-3 p-4 bg-white/90 border border-line rounded-xl max-h-60 overflow-y-auto animate-fadeIn">
-              <h4 className="text-xs font-semibold text-slate uppercase tracking-wider">
+            <div className="space-y-3 p-4 bg-white border border-[#D9E4D0] rounded-xl max-h-60 overflow-y-auto animate-fadeIn">
+              <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
                 Parsed Content Preview
               </h4>
               {parsedPairs.map((pair, idx) => (
-                <div key={idx} className="p-3 bg-tint/30 rounded-lg border border-line space-y-1">
-                  <p className="font-semibold text-sm text-ink">Q{idx + 1}: {pair.question}</p>
-                  <div className="text-xs text-slate line-clamp-2">
+                <div key={idx} className="p-3 bg-[#F5FAF4] rounded-lg border border-[#D9E4D0] space-y-1">
+                  <p className="font-bold text-sm text-[#1F2D1F]">Q{idx + 1}: {pair.question}</p>
+                  <div className="text-xs text-slate-600 line-clamp-2">
                     <MarkdownRenderer content={pair.answer} />
                   </div>
                 </div>
@@ -368,18 +368,18 @@ export const BulkAddModal: React.FC<BulkAddModalProps> = ({
           )}
 
           {/* Footer Actions */}
-          <div className="pt-4 border-t border-line/60 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-[#D9E4D0] flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="min-w-[44px] min-h-[44px] px-5 py-2.5 border border-line bg-white hover:bg-tint text-slate rounded-full text-sm font-semibold transition-all"
+              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs sm:text-sm font-extrabold border border-slate-300 transition-all shadow-xs cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || parsedPairs.length === 0}
-              className="min-w-[44px] min-h-[44px] px-6 py-2.5 bg-deep hover:bg-[#155AA3] text-white rounded-full text-sm font-semibold shadow-md transition-all active:scale-95 disabled:opacity-50"
+              className="px-6 py-2.5 bg-[#2F5D3A] hover:bg-[#1B4B29] text-white rounded-xl text-xs sm:text-sm font-extrabold border border-[#1B4B29] shadow-md transition-all active:scale-[0.99] disabled:bg-slate-200 disabled:text-slate-400 disabled:border-slate-300 disabled:shadow-none disabled:cursor-not-allowed cursor-pointer"
             >
               {isSubmitting ? 'Importing...' : `Import ${parsedPairs.length} questions`}
             </button>

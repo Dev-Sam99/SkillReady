@@ -3,6 +3,8 @@ import { sql, isNeonConfigured } from '@/lib/db';
 import { MOCK_QUESTIONS, MOCK_TOPICS } from '@/lib/mockData';
 import { Question, Topic } from '@/types';
 
+export const dynamic = 'force-dynamic';
+
 // Helper to split markdown text into prose vs code blocks for PDF/print formatting
 function renderMarkdownHTML(text: string): string {
   const parts = text.split(/(```[\s\S]*?```)/g);

@@ -77,6 +77,13 @@ export const TopicFilterBar: React.FC<TopicFilterBarProps> = ({
 
   const topicCountText = topics.length === 1 ? '1 topic' : `${topics.length} topics`;
 
+  const sortedTopics = React.useMemo(() => {
+    if (selectedTopicId === 'all') return topics;
+    const selected = topics.find((t) => t.id === selectedTopicId);
+    if (!selected) return topics;
+    return [selected, ...topics.filter((t) => t.id !== selectedTopicId)];
+  }, [topics, selectedTopicId]);
+
   return (
     <div className="space-y-2 w-full min-w-0">
       {errorMessage && (
@@ -119,7 +126,7 @@ export const TopicFilterBar: React.FC<TopicFilterBarProps> = ({
         </button>
 
         {/* Dynamic Topic Pills */}
-        {topics.map((topic) => {
+        {sortedTopics.map((topic) => {
           const isSelected = selectedTopicId === topic.id;
           const isEditing = editingTopicId === topic.id;
 

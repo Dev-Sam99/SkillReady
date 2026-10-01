@@ -2,8 +2,9 @@
 
 import { checkIsAdmin } from './authActions';
 import { sql, isNeonConfigured } from '@/lib/db';
-import { ConfidenceLevel, Question, Topic } from '@/types';
+import { ConfidenceLevel, Question, Topic, ReviewLog } from '@/types';
 import { revalidatePath } from 'next/cache';
+import { getNextReviewDate, endOfTodayLocal } from '@/lib/constants';
 
 // TOPIC ACTIONS
 export async function getTopics() {
@@ -129,14 +130,14 @@ export async function getQuestions(topicId?: string) {
     let rows;
     if (topicId && topicId !== 'all') {
       rows = await sql`
-        SELECT id, topic_id, question, answer, confidence, last_reviewed, created_at, updated_at 
+        SELECT id, topic_id, question, answer, confidence, last_reviewed, next_review_at, is_flagged, is_important, category_tag, tags, notes, created_at, updated_at 
         FROM questions 
         WHERE topic_id = ${topicId}::uuid
         ORDER BY created_at DESC
       `;
     } else {
       rows = await sql`
-        SELECT id, topic_id, question, answer, confidence, last_reviewed, created_at, updated_at 
+        SELECT id, topic_id, question, answer, confidence, last_reviewed, next_review_at, is_flagged, is_important, category_tag, tags, notes, created_at, updated_at 
         FROM questions 
         ORDER BY created_at DESC
       `;
@@ -145,6 +146,205 @@ export async function getQuestions(topicId?: string) {
   } catch (error: unknown) {
     const err = error as Error;
     console.error('Error fetching questions:', error);
+    return { data: null, error: err.message };
+  }
+}
+
+export async function rateQuestion(id: string, rating: ConfidenceLevel) {
+  const nextReview = getNextReviewDate(rating);
+  const nextReviewIso = nextReview.toISOString();
+
+  if (!isNeonConfigured()) {
+    return {
+      data: {
+        id,
+        confidence: rating,
+        last_reviewed: new Date().toISOString(),
+        next_review_at: nextReviewIso,
+      },
+      error: null,
+    };
+  }
+
+  try {
+    const rows = await sql`
+      UPDATE questions 
+      SET 
+        confidence = ${rating},
+        last_reviewed = NOW(),
+        next_review_at = ${nextReviewIso}::timestamp,
+        updated_at = NOW()
+      WHERE id = ${id}::uuid
+      RETURNING id, topic_id, question, answer, confidence, last_reviewed, next_review_at, is_flagged, is_important, category_tag, tags, notes, created_at, updated_at
+    `;
+
+    await sql`
+      INSERT INTO review_logs (question_id, rating, reviewed_at)
+      VALUES (${id}::uuid, ${rating}, NOW())
+    `;
+
+    revalidatePath('/');
+    return { data: rows[0] as Question, error: null };
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Error rating question:', error);
+    return { data: null, error: err.message };
+  }
+}
+
+export async function getDueQuestions() {
+  if (!isNeonConfigured()) {
+    return { data: [], error: null };
+  }
+
+  try {
+    const endToday = endOfTodayLocal().toISOString();
+    const rows = await sql`
+      SELECT id, topic_id, question, answer, confidence, last_reviewed, next_review_at, is_flagged, is_important, category_tag, tags, notes, created_at, updated_at
+      FROM questions 
+      WHERE next_review_at IS NULL OR next_review_at <= ${endToday}::timestamp
+      ORDER BY 
+        CASE 
+          WHEN next_review_at IS NOT NULL AND next_review_at < NOW() THEN 0
+          WHEN confidence = 'weak' THEN 1
+          WHEN confidence = 'medium' THEN 2
+          ELSE 3
+        END,
+        created_at DESC
+    `;
+    return { data: rows as Question[], error: null };
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Error fetching due questions:', error);
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getUpcomingCounts(days: number = 7) {
+  const results: { date: string; dayName: string; count: number }[] = [];
+  const now = new Date();
+
+  for (let i = 1; i <= days; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0];
+    const dayName = i === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'short' });
+
+    if (!isNeonConfigured()) {
+      results.push({ date: dateStr, dayName, count: 0 });
+      continue;
+    }
+
+    try {
+      const rows = await sql`
+        SELECT COUNT(*)::int as count FROM questions
+        WHERE next_review_at::date = ${dateStr}::date
+      `;
+      results.push({ date: dateStr, dayName, count: rows[0]?.count || 0 });
+    } catch {
+      results.push({ date: dateStr, dayName, count: 0 });
+    }
+  }
+
+  return { data: results, error: null };
+}
+
+export async function getHistory(questionId: string) {
+  if (!isNeonConfigured()) {
+    return { data: [], error: null };
+  }
+
+  try {
+    const rows = await sql`
+      SELECT id, question_id, rating, reviewed_at
+      FROM review_logs
+      WHERE question_id = ${questionId}::uuid
+      ORDER BY reviewed_at DESC
+    `;
+    return { data: rows as ReviewLog[], error: null };
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Error fetching question history:', error);
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getWeeklyBreakdown(weeks: number = 4) {
+  if (!isNeonConfigured()) {
+    return { data: [], error: null };
+  }
+
+  try {
+    // Computes weekly solid counts from review_logs over the last N weeks
+    const rows = await sql`
+      SELECT 
+        DATE_TRUNC('week', reviewed_at) as week_start,
+        COUNT(DISTINCT question_id) FILTER (WHERE rating = 'solid')::int as solid_count,
+        COUNT(DISTINCT question_id) FILTER (WHERE rating = 'medium')::int as medium_count,
+        COUNT(DISTINCT question_id) FILTER (WHERE rating = 'weak')::int as weak_count
+      FROM review_logs
+      WHERE reviewed_at >= NOW() - (${weeks} || ' weeks')::interval
+      GROUP BY DATE_TRUNC('week', reviewed_at)
+      ORDER BY week_start ASC
+    `;
+    type WeeklyRow = { week_start: string; solid_count: number; medium_count: number; weak_count: number };
+    const formatted = (rows as WeeklyRow[]).map((r, idx: number) => ({
+      weekLabel: `W${idx + 1}`,
+      solid: r.solid_count || 0,
+      medium: r.medium_count || 0,
+      weak: r.weak_count || 0,
+    }));
+    return { data: formatted, error: null };
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Error fetching weekly breakdown:', error);
+    return { data: [], error: err.message };
+  }
+}
+
+export async function updateQuestionFlags(id: string, flags: { is_flagged?: boolean; is_important?: boolean }) {
+  if (!isNeonConfigured()) {
+    return { data: null, error: null };
+  }
+
+  try {
+    const rows = await sql`
+      UPDATE questions
+      SET
+        is_flagged = COALESCE(${flags.is_flagged ?? null}, is_flagged),
+        is_important = COALESCE(${flags.is_important ?? null}, is_important),
+        updated_at = NOW()
+      WHERE id = ${id}::uuid
+      RETURNING id, topic_id, question, answer, confidence, last_reviewed, next_review_at, is_flagged, is_important, category_tag, tags, notes, created_at, updated_at
+    `;
+    revalidatePath('/');
+    return { data: rows[0] as Question, error: null };
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Error updating question flags:', error);
+    return { data: null, error: err.message };
+  }
+}
+
+export async function updateQuestionNotes(id: string, notes: string) {
+  if (!isNeonConfigured()) {
+    return { data: null, error: null };
+  }
+
+  try {
+    const rows = await sql`
+      UPDATE questions
+      SET
+        notes = ${notes},
+        updated_at = NOW()
+      WHERE id = ${id}::uuid
+      RETURNING id, topic_id, question, answer, confidence, last_reviewed, next_review_at, is_flagged, is_important, category_tag, tags, notes, created_at, updated_at
+    `;
+    revalidatePath('/');
+    return { data: rows[0] as Question, error: null };
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Error updating question notes:', error);
     return { data: null, error: err.message };
   }
 }
@@ -177,7 +377,7 @@ export async function createQuestion(formData: {
     const rows = await sql`
       INSERT INTO questions (topic_id, question, answer, confidence, last_reviewed)
       VALUES (${formData.topic_id}::uuid, ${formData.question.trim()}, ${formData.answer.trim()}, ${formData.confidence}, NOW())
-      RETURNING id, topic_id, question, answer, confidence, last_reviewed, created_at, updated_at
+      RETURNING id, topic_id, question, answer, confidence, last_reviewed, next_review_at, is_flagged, is_important, category_tag, tags, notes, created_at, updated_at
     `;
     revalidatePath('/');
     return { data: rows[0] as Question, error: null };
@@ -260,7 +460,7 @@ export async function bulkCreateQuestions(topicId: string, textContent: string) 
       const rows = await sql`
         INSERT INTO questions (topic_id, question, answer, confidence, last_reviewed)
         VALUES (${topicId}::uuid, ${pair.question}, ${pair.answer}, 'weak', NOW())
-        RETURNING id, topic_id, question, answer, confidence, last_reviewed, created_at, updated_at
+        RETURNING id, topic_id, question, answer, confidence, last_reviewed, next_review_at, is_flagged, is_important, category_tag, tags, notes, created_at, updated_at
       `;
       if (rows[0]) createdQuestions.push(rows[0] as Question);
     }
@@ -308,7 +508,7 @@ export async function updateQuestion(
           last_reviewed = NOW(),
           updated_at = NOW()
         WHERE id = ${id}::uuid
-        RETURNING id, topic_id, question, answer, confidence, last_reviewed, created_at, updated_at
+        RETURNING id, topic_id, question, answer, confidence, last_reviewed, next_review_at, is_flagged, is_important, category_tag, tags, notes, created_at, updated_at
       `;
     } else {
       rows = await sql`
@@ -319,7 +519,7 @@ export async function updateQuestion(
           answer = COALESCE(${formData.answer || null}, answer),
           updated_at = NOW()
         WHERE id = ${id}::uuid
-        RETURNING id, topic_id, question, answer, confidence, last_reviewed, created_at, updated_at
+        RETURNING id, topic_id, question, answer, confidence, last_reviewed, next_review_at, is_flagged, is_important, category_tag, tags, notes, created_at, updated_at
       `;
     }
 

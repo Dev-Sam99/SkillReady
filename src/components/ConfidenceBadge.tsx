@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ConfidenceLevel } from '@/types';
-import { TriangleAlert, Minus, CircleCheck } from 'lucide-react';
+import { BatteryLow, BatteryMedium, BatteryFull } from 'lucide-react';
 
 interface ConfidenceBadgeProps {
   confidence: ConfidenceLevel;
@@ -17,28 +17,35 @@ export const ConfidenceBadge: React.FC<ConfidenceBadgeProps> = ({
 }) => {
   const getBadgeConfig = (level: ConfidenceLevel) => {
     switch (level) {
-      case 'weak':
+      case 'weak': {
         return {
-          style: 'bg-[#FEE4E2] text-[#B42318] border-[#FECDCA] hover:bg-[#FECDCA]',
-          icon: <TriangleAlert className="w-4 h-4 shrink-0 text-[#B42318]" aria-hidden="true" />,
+          style: 'bg-[#FBE5E0] text-[#C2412D] border-[#FBE5E0] hover:bg-[#F8D4CE]',
+          icon: <BatteryLow className="w-4 h-4 shrink-0 text-[#C2412D]" aria-hidden="true" />,
           label: 'Weak',
+          tooltip: 'Weak Concept — Needs review',
         };
-      case 'medium':
+      }
+      case 'medium': {
         return {
-          style: 'bg-[#FEF0C7] text-[#93370D] border-[#FEDF89] hover:bg-[#FEDF89]',
-          icon: <Minus className="w-4 h-4 shrink-0 text-[#93370D]" aria-hidden="true" />,
+          style: 'bg-[#FBEFD2] text-[#B7791F] border-[#FBEFD2] hover:bg-[#F8E5BA]',
+          icon: <BatteryMedium className="w-4 h-4 shrink-0 text-[#B7791F]" aria-hidden="true" />,
           label: 'Medium',
+          tooltip: 'Medium Concept',
         };
-      case 'solid':
+      }
+      case 'solid': {
         return {
-          style: 'bg-[#DCFCE7] text-[#166534] border-[#BBF7D0] hover:bg-[#BBF7D0]',
-          icon: <CircleCheck className="w-4 h-4 shrink-0 text-[#166534]" aria-hidden="true" />,
+          style: 'bg-[#DDF1E5] text-[#2E8B57] border-[#DDF1E5] hover:bg-[#CBEAD6]',
+          icon: <BatteryFull className="w-4 h-4 shrink-0 text-[#2E8B57]" aria-hidden="true" />,
           label: 'Solid',
+          tooltip: 'Solid Concept — Mastered!',
         };
+      }
     }
   };
 
   const config = getBadgeConfig(confidence);
+  const fullTitle = interactive ? `${config.tooltip}\nClick to cycle level (Weak → Medium → Solid)` : config.tooltip;
 
   return (
     <button
@@ -53,7 +60,7 @@ export const ConfidenceBadge: React.FC<ConfidenceBadgeProps> = ({
       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-sm font-semibold tracking-tight transition-all shadow-2xs ${
         config.style
       } ${interactive ? 'cursor-pointer active:scale-95' : 'cursor-default'}`}
-      title={interactive ? 'Click to cycle state (Weak → Medium → Solid)' : undefined}
+      title={fullTitle}
     >
       {config.icon}
       <span>{config.label}</span>

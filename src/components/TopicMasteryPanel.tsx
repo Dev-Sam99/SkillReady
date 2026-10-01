@@ -8,14 +8,23 @@ interface TopicMasteryPanelProps {
   topics: Topic[];
   questions: Question[];
   onSelectTopic: (topicId: string) => void;
+  selectedTopicId?: string;
 }
 
 export const TopicMasteryPanel: React.FC<TopicMasteryPanelProps> = ({
   topics,
   questions,
   onSelectTopic,
+  selectedTopicId,
 }) => {
-  const topicStats = topics.map((t) => {
+  const sortedTopics = React.useMemo(() => {
+    if (!selectedTopicId || selectedTopicId === 'all') return topics;
+    const selected = topics.find((t) => t.id === selectedTopicId);
+    if (!selected) return topics;
+    return [selected, ...topics.filter((t) => t.id !== selectedTopicId)];
+  }, [topics, selectedTopicId]);
+
+  const topicStats = sortedTopics.map((t) => {
     const topicQuestions = questions.filter((q) => q.topic_id === t.id);
     const total = topicQuestions.length;
     const reviewedCount = topicQuestions.filter((q) => q.last_reviewed !== null).length;

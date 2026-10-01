@@ -60,6 +60,13 @@ export const QuestionLayoutShowcase: React.FC<QuestionLayoutShowcaseProps> = ({
     setCurrentPage(1);
   }, [selectedTopicId, searchQuery, showFlaggedOnly, confidenceFilter]);
 
+  const sortedTopics = React.useMemo(() => {
+    if (selectedTopicId === 'all') return topics;
+    const selected = topics.find((t) => t.id === selectedTopicId);
+    if (!selected) return topics;
+    return [selected, ...topics.filter((t) => t.id !== selectedTopicId)];
+  }, [topics, selectedTopicId]);
+
   // Pluralization Helper
   const pluralize = (count: number, singular: string, plural?: string) => {
     return `${count} ${count === 1 ? singular : plural || `${singular}s`}`;
@@ -258,7 +265,7 @@ export const QuestionLayoutShowcase: React.FC<QuestionLayoutShowcaseProps> = ({
                 <ChevronRight className="w-3.5 h-3.5 shrink-0" />
               </button>
 
-              {topics.map((t) => {
+              {sortedTopics.map((t) => {
                 const tCount = questions.filter((q) => q.topic_id === t.id).length;
                 const tSolid = questions.filter((q) => q.topic_id === t.id && q.confidence === 'solid').length;
                 const isSelected = selectedTopicId === t.id;

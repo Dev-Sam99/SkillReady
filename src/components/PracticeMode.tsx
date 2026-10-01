@@ -1,17 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Question, Topic, ConfidenceLevel } from '@/types';
-import { updateQuestion } from '@/app/actions';
+import { rateQuestion } from '@/app/actions';
+import { SCHEDULE_RULES, isQuestionDue, isQuestionOverdue } from '@/lib/constants';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { X, Play, Sparkles, Eye, Code, ListChecks, RotateCcw, MessagesSquare, TriangleAlert, Minus, CircleCheck } from 'lucide-react';
-import { CustomSelect } from './CustomSelect';
+import { ChevronLeft, Building2, CircleCheck, BatteryLow, BatteryMedium, BatteryFull } from 'lucide-react';
 
 interface PracticeModeProps {
   isOpen: boolean;
   onClose: () => void;
   questions: Question[];
   topics: Topic[];
+  practiceAll?: boolean;
 }
 
 export const PracticeMode: React.FC<PracticeModeProps> = ({
@@ -19,51 +20,51 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({
   onClose,
   questions,
   topics,
+  practiceAll = false,
 }) => {
-  const [selectedTopicId, setSelectedTopicId] = useState('all');
-  const [sessionStarted, setSessionStarted] = useState(false);
   const [sessionQuestions, setSessionQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [ratings, setRatings] = useState<{ id: string; rating: ConfidenceLevel }[]>([]);
   const [isFinished, setIsFinished] = useState(false);
 
-  if (!isOpen) return null;
+  // Initialize practice queue when opened
+  useEffect(() => {
+    if (!isOpen) return;
 
-  const handleStartSession = () => {
-    const pool = selectedTopicId === 'all' 
-      ? [...questions] 
-      : questions.filter(q => q.topic_id === selectedTopicId);
+    let pool: Question[];
+    if (practiceAll) {
+      pool = [...questions];
+    } else {
+      pool = questions.filter((q) => isQuestionDue(q.next_review_at));
+      if (pool.length === 0) pool = [...questions]; // fallback if nothing due
+    }
 
-    if (pool.length === 0) return;
+    // Sort queue: overdue first, then weak, medium, solid
+    const sorted = [...pool].sort((a, b) => {
+      const aOverdue = isQuestionOverdue(a.next_review_at) ? 1 : 0;
+      const bOverdue = isQuestionOverdue(b.next_review_at) ? 1 : 0;
+      if (aOverdue !== bOverdue) return bOverdue - aOverdue;
 
-    const shuffled = pool.sort(() => Math.random() - 0.5);
-    setSessionQuestions(shuffled);
+      const order: Record<ConfidenceLevel, number> = { weak: 0, medium: 1, solid: 2 };
+      return order[a.confidence] - order[b.confidence];
+    });
+
+    setSessionQuestions(sorted);
     setCurrentIndex(0);
     setShowAnswer(false);
     setRatings([]);
     setIsFinished(false);
-    setSessionStarted(true);
-  };
+  }, [isOpen, practiceAll, questions]);
 
-  const handleStartWeakMediumSession = () => {
-    const pool = questions.filter(q => q.confidence === 'weak' || q.confidence === 'medium');
-    if (pool.length === 0) return;
-
-    const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    setSessionQuestions(shuffled);
-    setCurrentIndex(0);
-    setShowAnswer(false);
-    setRatings([]);
-    setIsFinished(false);
-    setSessionStarted(true);
-  };
-
-  const handleSelfRating = async (rating: ConfidenceLevel) => {
+  const handleSelfRating = useCallback(async (rating: ConfidenceLevel) => {
     const currentQ = sessionQuestions[currentIndex];
+    if (!currentQ) return;
+
     setRatings((prev) => [...prev, { id: currentQ.id, rating }]);
 
-    await updateQuestion(currentQ.id, { confidence: rating });
+    // Rate question via Server Action with transaction & ReviewLog insert
+    await rateQuestion(currentQ.id, rating);
 
     if (currentIndex + 1 < sessionQuestions.length) {
       setCurrentIndex((prev) => prev + 1);
@@ -71,196 +72,198 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({
     } else {
       setIsFinished(true);
     }
-  };
+  }, [currentIndex, sessionQuestions]);
 
-  const handleRestartWeakOnly = () => {
-    const weakSessionQIds = new Set(ratings.filter((r) => r.rating === 'weak').map((r) => r.id));
+  // Keyboard Shortcuts: 1/2/3 to rate, Space to reveal, Esc/Back
+  useEffect(() => {
+    if (!isOpen || isFinished || sessionQuestions.length === 0) return;
 
-    let weakPool = sessionQuestions.filter((q) => weakSessionQIds.has(q.id));
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
 
-    if (weakPool.length === 0) {
-      weakPool = selectedTopicId === 'all'
-        ? questions.filter((q) => q.confidence === 'weak')
-        : questions.filter((q) => q.topic_id === selectedTopicId && q.confidence === 'weak');
-    }
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        setShowAnswer(true);
+      } else if (showAnswer) {
+        if (e.key === '1') {
+          e.preventDefault();
+          handleSelfRating('weak');
+        } else if (e.key === '2') {
+          e.preventDefault();
+          handleSelfRating('medium');
+        } else if (e.key === '3') {
+          e.preventDefault();
+          handleSelfRating('solid');
+        }
+      }
+    };
 
-    if (weakPool.length === 0) return;
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, showAnswer, isFinished, sessionQuestions.length, handleSelfRating]);
 
-    const shuffled = [...weakPool].sort(() => Math.random() - 0.5);
-    setSessionQuestions(shuffled);
-    setCurrentIndex(0);
-    setShowAnswer(false);
-    setRatings([]);
-    setIsFinished(false);
-  };
+  if (!isOpen) return null;
 
   const currentQuestion = sessionQuestions[currentIndex];
-  const hasCode = currentQuestion ? currentQuestion.question.includes('```') || currentQuestion.answer.includes('```') : false;
+  const currentTopicName = currentQuestion
+    ? topics.find((t) => t.id === currentQuestion.topic_id)?.name || 'General'
+    : 'General';
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="glass-panel border border-white/95 rounded-3xl w-full max-w-2xl shadow-glass overflow-hidden animate-fadeIn flex flex-col min-h-[400px] max-h-[90vh] overflow-y-auto text-ink">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-line/60 flex items-center justify-between bg-tint/40">
-          <div className="flex items-center gap-2.5">
-            <MessagesSquare className="w-6 h-6 text-deep" aria-hidden="true" />
-            <h2 className="text-xl font-display font-extrabold text-ink">
-              Mock round (Active recall)
-            </h2>
-          </div>
+    <div className="fixed inset-0 z-50 bg-[#1F2D1F]/40 flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
+      <div className="matcha-card w-full max-w-2xl shadow-card overflow-hidden flex flex-col min-h-[480px] max-h-[92vh] bg-white text-[#1F2D1F]">
+        {/* Top Header Bar */}
+        <div className="px-6 py-4 border-b border-[#D9E4D0] flex items-center justify-between bg-white shrink-0">
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close modal"
-            className="p-2 rounded-full text-slate hover:text-ink hover:bg-tint transition-colors"
+            aria-label="Back to Questions"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#566656] hover:text-[#1F2D1F] p-2 -ml-2 rounded-[16px] hover:bg-[#EEF3E8] transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" aria-hidden="true" />
+            <ChevronLeft className="w-5 h-5 text-[#2F5D3A]" aria-hidden="true" />
+            <span>Back to Questions</span>
           </button>
+
+          {!isFinished && sessionQuestions.length > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-[#1F2D1F]">
+                {currentIndex + 1} of {sessionQuestions.length}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* State 1: Topic Selection Start Screen */}
-        {!sessionStarted && (
-          <div className="p-6 sm:p-8 space-y-6 flex-1 flex flex-col justify-between">
-            <div className="space-y-4">
-              <h3 className="text-2xl font-display font-extrabold text-ink">
-                Select topic for practice
-              </h3>
-              <p className="text-sm text-slate font-medium leading-relaxed">
-                Questions will be presented one at a time in randomized order. Read the question, test your recall, reveal the answer, and self-rate your confidence.
-              </p>
-
-              <div className="pt-2">
-                <label className="block text-xs font-semibold text-ink uppercase tracking-wider mb-2">Practice topic</label>
-                <CustomSelect
-                  options={[
-                    { value: 'all', label: `All topics (${questions.length} questions)` },
-                    ...topics.map((t) => ({
-                      value: t.id,
-                      label: `${t.name} (${questions.filter((q) => q.topic_id === t.id).length} questions)`,
-                    })),
-                  ]}
-                  value={selectedTopicId}
-                  onChange={setSelectedTopicId}
-                  placeholder="Select a topic..."
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-line/60">
-              <button
-                type="button"
-                onClick={handleStartWeakMediumSession}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FEF0C7] hover:bg-[#FEDF89] text-[#93370D] border border-[#FEDF89] rounded-full font-semibold text-sm shadow-2xs transition-all active:scale-95"
-              >
-                <Sparkles className="w-4 h-4 text-[#93370D]" aria-hidden="true" />
-                <span>Practice Weak & Medium only ({questions.filter(q => q.confidence === 'weak' || q.confidence === 'medium').length})</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleStartSession}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-deep hover:bg-[#155AA3] text-white rounded-full font-semibold text-sm shadow-md transition-all active:scale-95"
-              >
-                <Play className="w-5 h-5 fill-current" aria-hidden="true" />
-                <span>Start practice session</span>
-              </button>
-            </div>
+        {/* Segmented Progress Bar */}
+        {!isFinished && sessionQuestions.length > 0 && (
+          <div className="w-full bg-[#E1EBD9] h-2">
+            <div
+              className="bg-[#2F5D3A] h-2 transition-all duration-300"
+              style={{ width: `${Math.round(((currentIndex + 1) / sessionQuestions.length) * 100)}%` }}
+            />
           </div>
         )}
 
-        {/* State 2: Active Question Cards */}
-        {sessionStarted && !isFinished && currentQuestion && (
-          <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6">
-            {/* Top Bar Info & Progress Bar */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-semibold text-slate">
-                <span>Question {currentIndex + 1} of {sessionQuestions.length}</span>
-                <span className="px-3 py-1 rounded-full bg-tint text-deep font-semibold border border-line">
-                  {topics.find((t) => t.id === currentQuestion.topic_id)?.name || 'General'}
+        {/* ACTIVE QUESTION SCREEN */}
+        {!isFinished && currentQuestion && (
+          <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6 overflow-y-auto">
+            {/* Topic, Level & Company Chips */}
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#E1EBD9] text-[#2F5D3A]">
+                {currentTopicName}
+              </span>
+
+              {/* Current Confidence Badge */}
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  currentQuestion.confidence === 'weak'
+                    ? 'bg-[#FBE5E0] text-[#C2412D]'
+                    : currentQuestion.confidence === 'medium'
+                    ? 'bg-[#FBEFD2] text-[#B7791F]'
+                    : 'bg-[#DDF1E5] text-[#2E8B57]'
+                }`}
+              >
+                Level: {currentQuestion.confidence}
+              </span>
+
+              {/* Company Tags */}
+              {currentQuestion.tags?.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#2F5D3A] bg-white border border-[#D9E4D0] px-2.5 py-1 rounded-full"
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  {tag}
                 </span>
-              </div>
-              <div className="w-full bg-line/60 rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-deep h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.round(((currentIndex + 1) / sessionQuestions.length) * 100)}%` }}
-                />
-              </div>
+              ))}
             </div>
 
-            {/* Main Question Display */}
+            {/* Question Heading */}
             <div className="space-y-4 my-auto">
-              <div className="text-xl sm:text-2xl font-display font-extrabold text-ink leading-snug">
-                <MarkdownRenderer content={currentQuestion.question} />
-              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-[#1F2D1F] leading-snug flex items-start gap-2">
+                <span className="text-[#2F5D3A] shrink-0 font-extrabold">Q{currentIndex + 1}.</span>
+                <span>{currentQuestion.question}</span>
+              </h2>
 
-              {/* Code prediction input */}
-              {hasCode && !showAnswer && (
-                <div className="space-y-2">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold text-slate uppercase tracking-wider">
-                    <Code className="w-4 h-4 text-deep" aria-hidden="true" />
-                    <span>Predict Output / Answer (Code Question Detected)</span>
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder="Type your predicted output or code solution here before revealing..."
-                    className="w-full p-3.5 bg-white border border-line rounded-xl text-sm font-mono text-ink placeholder-slate focus:outline-none focus:ring-2 focus:ring-deep shadow-2xs"
-                  />
+              {/* Hint Card before reveal */}
+              {!showAnswer && (
+                <div className="p-4 bg-[#EEF3E8] border border-[#D9E4D0] rounded-[22px] space-y-1 text-xs text-[#566656]">
+                  <p className="font-semibold text-[#1F2D1F]">💡 Practice Tip</p>
+                  <p>Say your answer out loud first. Then reveal it and rate how close you were.</p>
                 </div>
               )}
 
-              {/* Revealed Answer Box */}
+              {/* Solution Box after reveal */}
               {showAnswer && (
-                <div className="p-5 bg-white border border-[#BBF7D0] rounded-2xl space-y-2 animate-fadeIn shadow-2xs">
-                  <span className="text-xs font-semibold text-[#166534] uppercase tracking-wider block">
-                    Solution / Revealed Answer
+                <div className="p-5 bg-white border border-[#D9E4D0] rounded-[22px] space-y-2 animate-fadeIn shadow-subtle">
+                  <span className="text-xs font-bold text-[#2F5D3A] uppercase tracking-wider block">
+                    Solution & Explanation
                   </span>
-                  <div className="text-sm sm:text-base text-ink leading-relaxed">
+                  <div className="text-sm sm:text-base text-[#1F2D1F] leading-relaxed">
                     <MarkdownRenderer content={currentQuestion.answer} />
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Footer Buttons */}
-            <div className="pt-4 border-t border-line/60 flex items-center justify-between">
+            {/* Bottom Actions */}
+            <div className="pt-4 border-t border-[#D9E4D0] shrink-0">
               {!showAnswer ? (
                 <button
                   type="button"
                   onClick={() => setShowAnswer(true)}
-                  className="w-full py-3.5 bg-deep hover:bg-[#155AA3] text-white rounded-full font-semibold text-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-[#2F5D3A] hover:bg-[#254B2E] text-white rounded-[16px] font-bold text-base shadow-subtle transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <Eye className="w-5 h-5" aria-hidden="true" />
-                  <span>Reveal answer explanation</span>
+                  <span>Show answer (Space)</span>
                 </button>
               ) : (
-                <div className="w-full space-y-3">
-                  <span className="text-xs font-semibold text-slate text-center block uppercase tracking-wider">
-                    Self-rate mastery confidence:
-                  </span>
+                <div className="space-y-3">
+                  <p className="text-xs font-bold text-[#566656] text-center uppercase tracking-wider">
+                    Rate how close you were:
+                  </p>
                   <div className="grid grid-cols-3 gap-3">
+                    {/* Weak Button */}
                     <button
                       type="button"
                       onClick={() => handleSelfRating('weak')}
-                      className="py-3 bg-[#FEE4E2] hover:bg-[#FECDCA] text-[#B42318] border border-[#FECDCA] rounded-full font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                      title="Weak Concept — Needs review"
+                      className="py-3 px-2 bg-[#FBE5E0] hover:bg-[#F8D4CE] text-[#C2412D] border border-[#F5C2B8] rounded-[16px] font-bold text-sm transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
                     >
-                      <TriangleAlert className="w-4 h-4 text-[#B42318]" aria-hidden="true" />
-                      <span>Weak</span>
+                      <div className="flex items-center gap-1">
+                        <BatteryLow className="w-4 h-4" />
+                        <span>Weak (1)</span>
+                      </div>
+                      <span className="text-[11px] font-normal opacity-80">{SCHEDULE_RULES.weak.label}</span>
                     </button>
+
+                    {/* Medium Button */}
                     <button
                       type="button"
                       onClick={() => handleSelfRating('medium')}
-                      className="py-3 bg-[#FEF0C7] hover:bg-[#FEDF89] text-[#93370D] border border-[#FEDF89] rounded-full font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                      title="Medium Concept"
+                      className="py-3 px-2 bg-[#FBEFD2] hover:bg-[#F8E5BA] text-[#B7791F] border border-[#EED79D] rounded-[16px] font-bold text-sm transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
                     >
-                      <Minus className="w-4 h-4 text-[#93370D]" aria-hidden="true" />
-                      <span>Medium</span>
+                      <div className="flex items-center gap-1">
+                        <BatteryMedium className="w-4 h-4" />
+                        <span>Medium (2)</span>
+                      </div>
+                      <span className="text-[11px] font-normal opacity-80">{SCHEDULE_RULES.medium.label}</span>
                     </button>
+
+                    {/* Solid Button */}
                     <button
                       type="button"
                       onClick={() => handleSelfRating('solid')}
-                      className="py-3 bg-[#DCFCE7] hover:bg-[#BBF7D0] text-[#166534] border border-[#BBF7D0] rounded-full font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                      title="Solid Concept — Mastered!"
+                      className="py-3 px-2 bg-[#DDF1E5] hover:bg-[#CBEAD6] text-[#2E8B57] border border-[#B9DFC6] rounded-[16px] font-bold text-sm transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
                     >
-                      <CircleCheck className="w-4 h-4 text-[#166534]" aria-hidden="true" />
-                      <span>Solid</span>
+                      <div className="flex items-center gap-1">
+                        <BatteryFull className="w-4 h-4" />
+                        <span>Solid (3)</span>
+                      </div>
+                      <span className="text-[11px] font-normal opacity-80">{SCHEDULE_RULES.solid.label}</span>
                     </button>
                   </div>
                 </div>
@@ -269,53 +272,41 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({
           </div>
         )}
 
-        {/* State 3: Session Complete Summary */}
-        {sessionStarted && isFinished && (
-          <div className="p-6 sm:p-8 space-y-6 flex-1 flex flex-col justify-between text-center animate-fadeIn">
-            <div className="space-y-4 my-auto">
-              <div className="w-14 h-14 rounded-2xl bg-[#DCFCE7] border border-[#BBF7D0] flex items-center justify-center mx-auto text-[#166534]">
-                <ListChecks className="w-7 h-7" aria-hidden="true" />
+        {/* SESSION COMPLETE END SCREEN */}
+        {isFinished && (
+          <div className="p-8 space-y-6 flex-1 flex flex-col justify-between text-center animate-fadeIn my-auto">
+            <div className="space-y-4 max-w-sm mx-auto my-auto">
+              <div className="w-16 h-16 rounded-full bg-[#DDF1E5] text-[#2E8B57] flex items-center justify-center mx-auto">
+                <CircleCheck className="w-8 h-8" aria-hidden="true" />
               </div>
-              <div className="space-y-1.5">
-                <h3 className="text-2xl font-display font-extrabold text-ink">
-                  Session complete!
-                </h3>
-                <p className="text-sm text-slate max-w-sm mx-auto font-medium leading-relaxed">
-                  You reviewed <strong className="text-ink">{sessionQuestions.length} questions</strong>. Your confidence ratings have been saved.
+              <div className="space-y-1">
+                <h3 className="text-2xl font-bold text-[#1F2D1F]">Session complete!</h3>
+                <p className="text-sm font-medium text-[#566656]">
+                  You reviewed <strong>{sessionQuestions.length} questions</strong>.
                 </p>
               </div>
 
-              {/* Summary Chip Counts */}
-              <div className="flex items-center justify-center gap-3 pt-2 font-semibold text-xs">
-                <span className="px-3.5 py-1.5 rounded-full bg-[#FEE4E2] text-[#B42318] border border-[#FECDCA]">
+              {/* Rating Counts Summary */}
+              <div className="flex items-center justify-center gap-2 pt-2 font-semibold text-xs">
+                <span className="px-3 py-1 rounded-full bg-[#FBE5E0] text-[#C2412D]">
                   Weak: {ratings.filter((r) => r.rating === 'weak').length}
                 </span>
-                <span className="px-3.5 py-1.5 rounded-full bg-[#FEF0C7] text-[#93370D] border border-[#FEDF89]">
+                <span className="px-3 py-1 rounded-full bg-[#FBEFD2] text-[#B7791F]">
                   Medium: {ratings.filter((r) => r.rating === 'medium').length}
                 </span>
-                <span className="px-3.5 py-1.5 rounded-full bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0]">
+                <span className="px-3 py-1 rounded-full bg-[#DDF1E5] text-[#2E8B57]">
                   Solid: {ratings.filter((r) => r.rating === 'solid').length}
                 </span>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-line/60">
-              <button
-                type="button"
-                onClick={handleRestartWeakOnly}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-tint hover:bg-[#D5E8FD] text-deep rounded-full font-semibold text-sm transition-all active:scale-95"
-              >
-                <RotateCcw className="w-4 h-4 text-deep" aria-hidden="true" />
-                <span>Repeat weak questions only</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSessionStarted(false)}
-                className="inline-flex items-center gap-2 px-6 py-2.5 bg-deep hover:bg-[#155AA3] text-white rounded-full font-semibold text-sm shadow-md transition-all active:scale-95"
-              >
-                <span>New practice session</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full bg-[#2F5D3A] hover:bg-[#254B2E] text-white font-bold text-base py-4 px-6 rounded-[16px] transition-all cursor-pointer shadow-subtle"
+            >
+              <span>Back to Questions</span>
+            </button>
           </div>
         )}
       </div>

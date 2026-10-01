@@ -1,25 +1,17 @@
 import type { Metadata, Viewport } from 'next';
-import { Bricolage_Grotesque, Figtree } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import { PwaRegister } from '@/components/PwaRegister';
 import './globals.css';
 
-const bricolage = Bricolage_Grotesque({
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-bricolage',
-  weight: ['800'],
-  display: 'swap',
-});
-
-const figtree = Figtree({
-  subsets: ['latin'],
-  variable: '--font-figtree',
-  weight: ['400', '500', '600'],
+  variable: '--font-inter',
   display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: 'SkillReady — Technical Interview & Spaced Repetition Tracker',
-  description: 'Editorial interview preparation and spaced repetition tracker for software engineers',
+  title: 'SkillReady — Interview Practice & Spaced Repetition',
+  description: 'Smart active recall and spaced repetition interview preparation for software engineers',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -31,15 +23,16 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
       { url: '/icons/icon.svg', type: 'image/svg+xml' },
-      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
     ],
-    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: '/icon.svg',
+    apple: [{ url: '/icon.svg', type: 'image/svg+xml' }],
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#EAF4FE',
+  themeColor: '#EEF3E8',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -52,17 +45,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${bricolage.variable} ${figtree.variable} font-sans antialiased bg-mist text-ink min-h-screen selection:bg-deep selection:text-white relative`}>
-        {/* Sky Glass Fixed Blurred Background Blobs */}
-        <div className="sky-glass-blob-container" aria-hidden="true">
-          <div className="sky-glass-blob blob-1" />
-          <div className="sky-glass-blob blob-2" />
-          <div className="sky-glass-blob blob-3" />
-        </div>
-
-        {/* Page Content Container */}
-        <div className="relative z-10 flex flex-col min-h-screen">
+    <html lang="en" className={inter.variable}>
+      <body className="font-sans antialiased bg-[#EEF3E8] text-[#1F2D1F] min-h-screen selection:bg-[#2F5D3A] selection:text-white relative">
+        <div className="relative flex flex-col min-h-screen">
           {children}
         </div>
         <PwaRegister />
